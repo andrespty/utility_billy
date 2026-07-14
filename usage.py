@@ -154,3 +154,11 @@ def daterange(start: date, end: date):
     days = (end - start).days
     for i in range(days + 1):
         yield start + timedelta(days=i)
+
+
+def has_no_data(page) -> bool:
+    """True when the chart is currently showing 'no data'."""
+    try:
+        return page.locator(".iti-items-nodata, :text('no graph data')").first.is_visible()
+    except Exception:
+        return False

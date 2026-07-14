@@ -18,7 +18,7 @@ Usage:
 
 import argparse
 import sys
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -49,6 +49,7 @@ def parse_args() -> argparse.Namespace:
         help="Directory to save downloaded Excel files into (default: %(default)s)",
     )
     return parser.parse_args()
+
 
 
 def main() -> None:
@@ -98,14 +99,24 @@ def main() -> None:
 
         # --- Daily exports for each day in that week ------------------------
         usage_mod.select_graph_type(page, "day")
+        today = date.today()
         for day in usage_mod.daterange(week_start, week_end):
+            # Case 1: current week — skip days that haven't happened yet
+            if day > today:
+                print(f"\nSkipping {day.isoformat()} (future date, no data yet).")
+                continue
+
             print(f"\nSwitching to Day view for {day.isoformat()}...")
             usage_mod.open_date_picker(page)
             usage_mod.set_date(page, day)
 
             print("Refreshing data...")
             usage_mod.click_refresh(page)
-            # usage_mod.dismiss_alert_modal(page)
+            
+            # Case 2: past day with no reading on file
+            if usage_mod.has_no_data(page):
+                print(f"No data for {day.isoformat()} — skipping export.")
+                continue
 
             daily_file = out_dir / f"usage_day_{day.isoformat()}.csv"
             print(f"Exporting daily data to {daily_file}...")
