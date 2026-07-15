@@ -2,3 +2,6 @@ playwright>=1.44
 python-dotenv>=1.0
 matplotlib
 pandas
+streamlit>=1.36
+openpyxl
+plotly>=5.20
