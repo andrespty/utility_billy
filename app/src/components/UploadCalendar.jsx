@@ -3,36 +3,29 @@ import { supabase } from '../supabaseClient'
 import { buildMonthGrid, countDistinctHoursByDate, monthLabel, monthRange } from '../lib/calendar'
 
 const STATUS_COLORS = {
-  none: '#e5e7eb',
-  partial: '#fbbf24',
-  full: '#22c55e',
+  none: { bg: '#f1ede2', border: '#e7e2d3', text: '#5c5550' },
+  partial: { bg: '#faf3de', border: '#e3d29b', text: '#9c7a17' },
+  full: { bg: '#e7efe9', border: '#bcd3c4', text: '#3f6b4f' },
 }
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 const navBtnStyle = {
-  border: '1px solid #d0d3d8',
-  background: 'white',
-  borderRadius: 6,
+  border: '1px solid #d8d2c2',
+  background: '#ffffff',
+  borderRadius: 2,
   width: 32,
   height: 32,
   cursor: 'pointer',
   fontSize: 16,
   lineHeight: 1,
+  fontFamily: 'IBM Plex Sans',
 }
 
 function LegendDot({ color, label }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: 3,
-          background: color,
-          display: 'inline-block',
-        }}
-      />
+    <div className="legend-dot">
+      <span className="swatch" style={{ background: color, borderRadius: 0 }} />
       {label}
     </div>
   )
@@ -112,18 +105,7 @@ export default function UploadCalendar() {
         </button>
         <div style={{ textAlign: 'center' }}>
           <h3 style={{ margin: 0 }}>{monthLabel(year, month)}</h3>
-          <button
-            type="button"
-            onClick={goToday}
-            style={{
-              border: 'none',
-              background: 'none',
-              color: '#6b7280',
-              fontSize: 12,
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
+          <button type="button" className="ghost" onClick={goToday} style={{ fontSize: 12 }}>
             Jump to today
           </button>
         </div>
@@ -138,7 +120,7 @@ export default function UploadCalendar() {
           gridTemplateColumns: 'repeat(7, 1fr)',
           gap: 4,
           fontSize: 11,
-          color: '#6b7280',
+          color: 'var(--muted)',
           marginBottom: 4,
         }}
       >
@@ -154,8 +136,10 @@ export default function UploadCalendar() {
           key={wi}
           style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}
         >
-          {week.map((cell, ci) =>
-            cell ? (
+          {week.map((cell, ci) => {
+            if (!cell) return <div key={`pad-${wi}-${ci}`} />
+            const colors = STATUS_COLORS[cell.status]
+            return (
               <div
                 key={cell.date}
                 title={
@@ -165,33 +149,32 @@ export default function UploadCalendar() {
                     ? `${cell.date}: ${cell.hours}/24 hours recorded`
                     : `${cell.date}: no data uploaded`
                 }
+                className="tabular-nums"
                 style={{
                   aspectRatio: '1',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: cell.date === todayIso ? '2px solid #1a1a1a' : '1px solid transparent',
-                  borderRadius: 6,
-                  background: STATUS_COLORS[cell.status],
+                  border: cell.date === todayIso ? `2px solid var(--ink)` : `1px solid ${colors.border}`,
+                  borderRadius: 2,
+                  background: colors.bg,
                   fontSize: 12,
-                  color: cell.status === 'none' ? '#6b7280' : '#1a1a1a',
+                  color: colors.text,
                 }}
               >
                 {cell.day}
               </div>
-            ) : (
-              <div key={`pad-${wi}-${ci}`} />
             )
-          )}
+          })}
         </div>
       ))}
 
-      {loading && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>Loading…</div>}
+      {loading && <div className="note" style={{ marginTop: 8 }}>Loading…</div>}
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: '#6b7280' }}>
-        <LegendDot color={STATUS_COLORS.none} label="No data" />
-        <LegendDot color={STATUS_COLORS.partial} label="Partial day" />
-        <LegendDot color={STATUS_COLORS.full} label="Complete day" />
+      <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+        <LegendDot color={STATUS_COLORS.none.text} label="No data" />
+        <LegendDot color={STATUS_COLORS.partial.text} label="Partial day" />
+        <LegendDot color={STATUS_COLORS.full.text} label="Complete day" />
       </div>
     </div>
   )

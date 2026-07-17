@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-function secondaryBtnStyle(extra = {}) {
-  return {
-    border: '1px solid #d0d3d8',
-    background: 'white',
-    borderRadius: 6,
-    padding: '6px 12px',
-    cursor: 'pointer',
-    fontSize: 13,
-    ...extra,
-  }
-}
-
 function todayIso() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
@@ -80,52 +68,27 @@ export default function BillCyclesSection() {
 
   return (
     <div className="card">
-      <h3 style={{ marginTop: 0 }}>Bill cycles</h3>
-      <p style={{ color: '#6b7280', fontSize: 14, marginTop: -8 }}>
+      <h3>Bill cycles</h3>
+      <p className="note">
         Add each billing period's start and end date as you go. The cycle covering today is
         flagged as current.
       </p>
 
       {!loading && cycles.length === 0 && (
-        <p style={{ color: '#6b7280', fontSize: 14 }}>No cycles added yet.</p>
+        <p className="note">No cycles added yet.</p>
       )}
 
       {cycles.map((c) => {
         const isCurrent = today >= c.start_date && today <= c.end_date
         return (
-          <div
-            key={c.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 0',
-              borderBottom: '1px solid #eef0f2',
-            }}
-          >
+          <div key={c.id} className="row">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14 }}>
+              <span className="tabular-nums" style={{ fontSize: 14 }}>
                 {c.start_date} → {c.end_date}
               </span>
-              {isCurrent && (
-                <span
-                  style={{
-                    fontSize: 11,
-                    background: '#1a1a1a',
-                    color: 'white',
-                    borderRadius: 999,
-                    padding: '2px 8px',
-                  }}
-                >
-                  Current
-                </span>
-              )}
+              {isCurrent && <span className="badge">Current</span>}
             </div>
-            <button
-              type="button"
-              style={secondaryBtnStyle({ color: '#b91c1c' })}
-              onClick={() => handleDelete(c.id)}
-            >
+            <button type="button" className="ghost-danger" onClick={() => handleDelete(c.id)}>
               Delete
             </button>
           </div>
