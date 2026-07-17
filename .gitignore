@@ -5,3 +5,4 @@ __pycache__/
 venv/
 *.pyc
 energy_app/energy.db
+.ipynb_checkpoints/
