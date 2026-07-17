@@ -132,8 +132,8 @@ export default function Upload() {
       <UploadCalendar />
 
       <div className="card">
-      <h2 style={{ marginTop: 0 }}>Upload usage exports</h2>
-      <p style={{ color: '#6b7280', fontSize: 14 }}>
+      <h2>Upload usage exports</h2>
+      <p className="note">
         Download hourly CSVs from your utility company's site and pick as many as you like at
         once. Each file keeps its own date — guessed from the filename, editable below before
         you upload. Re-uploading a date you've already uploaded is safe; it overwrites that
@@ -146,16 +146,7 @@ export default function Upload() {
       {items.length > 0 && (
         <div style={{ marginTop: 16 }}>
           {items.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '10px 0',
-                borderBottom: '1px solid #eef0f2',
-              }}
-            >
+            <div key={item.id} className="row" style={{ gap: 12 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -170,7 +161,7 @@ export default function Upload() {
                   {item.file.name}
                 </div>
                 {item.status === 'uploading' && (
-                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Uploading…</div>
+                  <div className="note" style={{ margin: '2px 0 0' }}>Uploading…</div>
                 )}
                 {item.message && (
                   <div
@@ -192,15 +183,9 @@ export default function Upload() {
 
               <button
                 type="button"
+                className="ghost"
                 onClick={() => removeItem(item.id)}
                 disabled={item.status === 'uploading'}
-                style={{
-                  border: 'none',
-                  background: 'none',
-                  color: '#6b7280',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                }}
               >
                 Remove
               </button>
@@ -224,19 +209,7 @@ export default function Upload() {
         </button>
 
         {items.some((it) => it.status === 'done') && (
-          <button
-            type="button"
-            onClick={clearFinished}
-            disabled={busy}
-            style={{
-              border: '1px solid #d0d3d8',
-              background: 'white',
-              borderRadius: 6,
-              padding: '10px 18px',
-              cursor: 'pointer',
-              fontSize: 14,
-            }}
-          >
+          <button type="button" className="secondary" onClick={clearFinished} disabled={busy}>
             Clear finished
           </button>
         )}

@@ -18,18 +18,6 @@ const emptyForm = {
   weekend_on_peak_end: 23,
 }
 
-function secondaryBtnStyle(extra = {}) {
-  return {
-    border: '1px solid #d0d3d8',
-    background: 'white',
-    borderRadius: 6,
-    padding: '6px 12px',
-    cursor: 'pointer',
-    fontSize: 13,
-    ...extra,
-  }
-}
-
 export default function ProgramsSection() {
   const [programs, setPrograms] = useState([])
   const [loading, setLoading] = useState(true)
@@ -157,45 +145,24 @@ export default function ProgramsSection() {
 
   return (
     <div className="card">
-      <h3 style={{ marginTop: 0 }}>Rate programs</h3>
-      <p style={{ color: '#6b7280', fontSize: 14, marginTop: -8 }}>
+      <h3>Rate programs</h3>
+      <p className="note">
         Up to {MAX_PROGRAMS} programs. Each one is either a flat $/kWh rate, or an on-peak /
         off-peak time-of-use rate with its own hour windows for weekdays vs weekends.
       </p>
 
       {!loading && programs.length === 0 && !formOpen && (
-        <p style={{ color: '#6b7280', fontSize: 14 }}>No programs yet.</p>
+        <p className="note">No programs yet.</p>
       )}
 
       {programs.map((p) => (
-        <div
-          key={p.id}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 0',
-            borderBottom: '1px solid #eef0f2',
-          }}
-        >
+        <div key={p.id} className="row">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontWeight: 500, fontSize: 14 }}>{p.name}</span>
-              {p.is_default && (
-                <span
-                  style={{
-                    fontSize: 11,
-                    background: '#1a1a1a',
-                    color: 'white',
-                    borderRadius: 999,
-                    padding: '2px 8px',
-                  }}
-                >
-                  Default
-                </span>
-              )}
+              {p.is_default && <span className="badge">Default</span>}
             </div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }} className="tabular-nums">
               {p.type === 'fixed' ? (
                 <>${Number(p.fixed_rate).toFixed(4)}/kWh flat</>
               ) : (
@@ -214,18 +181,14 @@ export default function ProgramsSection() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {!p.is_default && (
-              <button type="button" style={secondaryBtnStyle()} onClick={() => handleSetDefault(p.id)}>
+              <button type="button" className="secondary" onClick={() => handleSetDefault(p.id)}>
                 Set default
               </button>
             )}
-            <button type="button" style={secondaryBtnStyle()} onClick={() => openEditForm(p)}>
+            <button type="button" className="secondary" onClick={() => openEditForm(p)}>
               Edit
             </button>
-            <button
-              type="button"
-              style={secondaryBtnStyle({ color: '#b91c1c' })}
-              onClick={() => handleDelete(p.id)}
-            >
+            <button type="button" className="ghost-danger" onClick={() => handleDelete(p.id)}>
               Delete
             </button>
           </div>
@@ -245,7 +208,7 @@ export default function ProgramsSection() {
       )}
 
       {formOpen && (
-        <form onSubmit={handleSave} style={{ marginTop: 16, borderTop: '1px solid #eef0f2', paddingTop: 16 }}>
+        <form onSubmit={handleSave} style={{ marginTop: 16, borderTop: '1px solid var(--rule-faint)', paddingTop: 16 }}>
           <label htmlFor="program-name">Name</label>
           <input
             id="program-name"
@@ -259,14 +222,6 @@ export default function ProgramsSection() {
             id="program-type"
             value={form.type}
             onChange={(e) => setForm({ ...form, type: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '8px 10px',
-              border: '1px solid #d0d3d8',
-              borderRadius: 6,
-              fontSize: 14,
-              marginBottom: 16,
-            }}
           >
             <option value="fixed">Fixed rate</option>
             <option value="time_of_use">Time-of-use (on-peak / off-peak)</option>
@@ -326,7 +281,7 @@ export default function ProgramsSection() {
                     </option>
                   ))}
                 </select>
-                <span style={{ alignSelf: 'center', color: '#6b7280' }}>to</span>
+                <span style={{ alignSelf: 'center', color: 'var(--muted)' }}>to</span>
                 <select
                   value={form.weekday_on_peak_end}
                   onChange={(e) => setForm({ ...form, weekday_on_peak_end: Number(e.target.value) })}
@@ -367,7 +322,7 @@ export default function ProgramsSection() {
                         </option>
                       ))}
                     </select>
-                    <span style={{ alignSelf: 'center', color: '#6b7280' }}>to</span>
+                    <span style={{ alignSelf: 'center', color: 'var(--muted)' }}>to</span>
                     <select
                       value={form.weekend_on_peak_end}
                       onChange={(e) =>
@@ -393,7 +348,7 @@ export default function ProgramsSection() {
             <button className="primary" type="submit" disabled={saving}>
               {saving ? 'Saving…' : 'Save program'}
             </button>
-            <button type="button" style={secondaryBtnStyle()} onClick={closeForm} disabled={saving}>
+            <button type="button" className="secondary" onClick={closeForm} disabled={saving}>
               Cancel
             </button>
           </div>
@@ -405,8 +360,5 @@ export default function ProgramsSection() {
 
 const selectStyle = {
   flex: 1,
-  padding: '8px 10px',
-  border: '1px solid #d0d3d8',
-  borderRadius: 6,
-  fontSize: 14,
+  marginBottom: 0,
 }

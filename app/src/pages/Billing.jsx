@@ -13,8 +13,8 @@ import { supabase } from '../supabaseClient'
 import { computeCompleteness, estimateCycleTotal, isWeekend } from '../lib/billing'
 import { dailyTotals } from '../lib/aggregate'
 
-const WEEKDAY_COLOR = '#1a1a1a'
-const WEEKEND_COLOR = '#f59e0b'
+const WEEKDAY_COLOR = '#3e4a5c'
+const WEEKEND_COLOR = '#a6300e'
 
 function todayIso() {
   const d = new Date()
@@ -23,38 +23,14 @@ function todayIso() {
   ).padStart(2, '0')}`
 }
 
-function secondaryBtnStyle(extra = {}) {
-  return {
-    border: '1px solid #d0d3d8',
-    background: 'white',
-    borderRadius: 6,
-    padding: '6px 12px',
-    cursor: 'pointer',
-    fontSize: 13,
-    ...extra,
-  }
-}
-
 const selectFullStyle = {
   width: '100%',
-  padding: '8px 10px',
-  border: '1px solid #d0d3d8',
-  borderRadius: 6,
-  fontSize: 14,
 }
 
 function LegendDot({ color, label }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: 3,
-          background: color,
-          display: 'inline-block',
-        }}
-      />
+    <div className="legend-dot">
+      <span className="swatch" style={{ background: color }} />
       {label}
     </div>
   )
@@ -207,84 +183,94 @@ export default function Billing() {
       {selectedCycle && (
         <>
           {completeness && completeness.missingDays > 0 && (
-            <div
-              className="card"
-              style={{ background: '#fef3c7', color: '#92400e', fontSize: 13 }}
-            >
-              ⚠ {completeness.missingDays} of {completeness.totalDays} days in this cycle are
+            <div className="card callout">
+              {completeness.missingDays} of {completeness.totalDays} days in this cycle are
               missing or have incomplete data — totals below may be low.
             </div>
           )}
 
           {estimate && (
             <div className="card">
-              <h3 style={{ marginTop: 0 }}>Estimate</h3>
+              <h3>Estimate</h3>
 
               <div className="stats-grid">
                 <div className="stat-box">
                   <div className="label">Total kWh</div>
-                  <div className="value">{estimate.totalKwh}</div>
+                  <div className="value tabular-nums">{estimate.totalKwh}</div>
                 </div>
 
                 {program.type === 'time_of_use' ? (
                   <>
                     <div className="stat-box">
                       <div className="label">On-peak kWh</div>
-                      <div className="value">{estimate.onPeakKwh}</div>
+                      <div className="value tabular-nums">{estimate.onPeakKwh}</div>
                     </div>
                     <div className="stat-box">
                       <div className="label">Off-peak kWh</div>
-                      <div className="value">{estimate.offPeakKwh}</div>
+                      <div className="value tabular-nums">{estimate.offPeakKwh}</div>
                     </div>
                   </>
                 ) : (
                   <div className="stat-box">
                     <div className="label">Rate</div>
-                    <div className="value">${Number(program.fixed_rate).toFixed(4)}</div>
+                    <div className="value tabular-nums">${Number(program.fixed_rate).toFixed(4)}</div>
                   </div>
                 )}
 
                 <div className="stat-box">
                   <div className="label">Energy charge</div>
-                  <div className="value">${estimate.energyCharge.toFixed(2)}</div>
+                  <div className="value tabular-nums">${estimate.energyCharge.toFixed(2)}</div>
                 </div>
 
                 <div className="stat-box">
                   <div className="label">Fixed costs</div>
-                  <div className="value">${estimate.fixedCostsTotal.toFixed(2)}</div>
+                  <div className="value tabular-nums">${estimate.fixedCostsTotal.toFixed(2)}</div>
                 </div>
 
-                <div className="stat-box" style={{ background: '#1a1a1a' }}>
-                  <div className="label" style={{ color: '#9ca3af' }}>
-                    Estimated total
-                  </div>
-                  <div className="value" style={{ color: 'white' }}>
-                    ${estimate.total.toFixed(2)}
-                  </div>
+                <div className="stat-box emphasis">
+                  <div className="label">Estimated total</div>
+                  <div className="value tabular-nums">${estimate.total.toFixed(2)}</div>
                 </div>
               </div>
 
-              <div style={{ fontSize: 13, color: '#6b7280', marginTop: 12 }}>
+              <div className="note">
                 Using program: <strong>{program.name}</strong>
               </div>
             </div>
           )}
 
           <div className="card">
-            <h3 style={{ marginTop: 0 }}>Daily consumption</h3>
+            <h3>Daily consumption</h3>
 
             {loadingReadings ? (
-              <div style={{ fontSize: 13, color: '#6b7280' }}>Loading…</div>
+              <div className="note">Loading…</div>
             ) : chartData.length === 0 ? (
-              <div style={{ fontSize: 13, color: '#6b7280' }}>No data for this cycle yet.</div>
+              <div className="note">No data for this cycle yet.</div>
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
+                  <BarChart data={chartData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+                    <CartesianGrid vertical={false} stroke="#e7e2d3" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
+                      axisLine={{ stroke: '#d8d2c2' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#ffffff',
+                        border: '1px solid #d8d2c2',
+                        borderRadius: 2,
+                        fontFamily: 'IBM Plex Sans',
+                        fontSize: 12,
+                      }}
+                    />
                     <Bar dataKey="kwh">
                       {chartData.map((entry) => (
                         <Cell key={entry.date} fill={entry.weekend ? WEEKEND_COLOR : WEEKDAY_COLOR} />
@@ -292,7 +278,7 @@ export default function Billing() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-                <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: '#6b7280' }}>
+                <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
                   <LegendDot color={WEEKDAY_COLOR} label="Weekday" />
                   <LegendDot color={WEEKEND_COLOR} label="Weekend" />
                 </div>
@@ -301,7 +287,7 @@ export default function Billing() {
           </div>
 
           <div className="card">
-            <h3 style={{ marginTop: 0 }}>Actual bill</h3>
+            <h3>Actual bill</h3>
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
                 <label htmlFor="actual-amount">Actual bill amount ($)</label>
@@ -317,7 +303,7 @@ export default function Billing() {
               </div>
               <button
                 type="button"
-                style={secondaryBtnStyle()}
+                className="secondary"
                 onClick={saveActual}
                 disabled={saving}
               >
@@ -327,10 +313,11 @@ export default function Billing() {
 
             {variance !== null && (
               <div
+                className="tabular-nums"
                 style={{
                   fontSize: 13,
                   marginTop: 8,
-                  color: variance > 0 ? '#b91c1c' : variance < 0 ? '#15803d' : '#6b7280',
+                  color: variance > 0 ? 'var(--data-2)' : variance < 0 ? 'var(--data-3)' : 'var(--muted)',
                 }}
               >
                 {variance === 0

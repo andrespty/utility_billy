@@ -30,46 +30,39 @@ export default function App() {
     return <Login />
   }
 
+  const sections = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'upload', label: 'Upload' },
+    { id: 'billing', label: 'Billing' },
+    { id: 'settings', label: 'Settings' },
+  ]
+
   return (
     <div className="app-shell">
-      <div className="top-bar">
-        <h1>⚡ Energy Tracker</h1>
-        <button className="primary" onClick={() => supabase.auth.signOut()}>
+      <div className="sidebar">
+        <div className="wordmark">Energy Tracker</div>
+        <nav>
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              className={tab === s.id ? 'active' : ''}
+              onClick={() => setTab(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </nav>
+        <button className="signout" onClick={() => supabase.auth.signOut()}>
           Sign out
         </button>
       </div>
 
-      <div className="tabs">
-        <button
-          className={tab === 'dashboard' ? 'active' : ''}
-          onClick={() => setTab('dashboard')}
-        >
-          Dashboard
-        </button>
-        <button
-          className={tab === 'upload' ? 'active' : ''}
-          onClick={() => setTab('upload')}
-        >
-          Upload
-        </button>
-        <button
-          className={tab === 'billing' ? 'active' : ''}
-          onClick={() => setTab('billing')}
-        >
-          Billing
-        </button>
-        <button
-          className={tab === 'settings' ? 'active' : ''}
-          onClick={() => setTab('settings')}
-        >
-          Settings
-        </button>
+      <div className="main">
+        {tab === 'dashboard' && <Dashboard />}
+        {tab === 'upload' && <Upload />}
+        {tab === 'billing' && <Billing />}
+        {tab === 'settings' && <Settings />}
       </div>
-
-      {tab === 'dashboard' && <Dashboard />}
-      {tab === 'upload' && <Upload />}
-      {tab === 'billing' && <Billing />}
-      {tab === 'settings' && <Settings />}
     </div>
   )
 }

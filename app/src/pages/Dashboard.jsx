@@ -97,44 +97,79 @@ export default function Dashboard() {
           <div className="stats-grid">
             <div className="stat-box">
               <div className="label">Total kWh</div>
-              <div className="value">{stats.totalKwh}</div>
+              <div className="value tabular-nums">{stats.totalKwh}</div>
             </div>
             <div className="stat-box">
               <div className="label">Avg daily kWh</div>
-              <div className="value">{stats.avgDailyKwh}</div>
+              <div className="value tabular-nums">{stats.avgDailyKwh}</div>
             </div>
             <div className="stat-box">
               <div className="label">Days covered</div>
-              <div className="value">{stats.daysCovered}</div>
+              <div className="value tabular-nums">{stats.daysCovered}</div>
             </div>
             <div className="stat-box">
               <div className="label">Peak hour</div>
-              <div className="value">{stats.peakHour}</div>
+              <div className="value tabular-nums">{stats.peakHour}</div>
             </div>
           </div>
 
           <div className="card">
-            <h3 style={{ marginTop: 0 }}>Daily consumption (kWh)</h3>
+            <h3>Daily consumption (kWh)</h3>
             <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={daily}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="kwh" stroke="#1a1a1a" strokeWidth={2} dot={false} />
+              <LineChart data={daily} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="#e7e2d3" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
+                  axisLine={{ stroke: '#d8d2c2' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: '#ffffff',
+                    border: '1px solid #d8d2c2',
+                    borderRadius: 2,
+                    fontFamily: 'IBM Plex Sans',
+                    fontSize: 12,
+                  }}
+                />
+                <Line type="monotone" dataKey="kwh" stroke="#3e4a5c" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
           <div className="card">
-            <h3 style={{ marginTop: 0 }}>Typical usage by hour of day</h3>
+            <h3>Typical usage by hour of day</h3>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={hourly}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={1} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="avgKwh" fill="#1a1a1a" />
+              <BarChart data={hourly} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="#e7e2d3" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
+                  axisLine={{ stroke: '#d8d2c2' }}
+                  tickLine={false}
+                  interval={1}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: '#ffffff',
+                    border: '1px solid #d8d2c2',
+                    borderRadius: 2,
+                    fontFamily: 'IBM Plex Sans',
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="avgKwh" fill="#3e4a5c" />
               </BarChart>
             </ResponsiveContainer>
           </div>

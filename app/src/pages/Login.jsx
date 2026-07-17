@@ -18,8 +18,8 @@ export default function Login() {
 
   return (
     <div className="login-wrap">
+      <div className="wordmark">Energy Tracker</div>
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>Sign in</h2>
         <form onSubmit={handleSubmit}>
           <label htmlFor="email">Email</label>
           <input

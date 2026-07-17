@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-function secondaryBtnStyle(extra = {}) {
-  return {
-    border: '1px solid #d0d3d8',
-    background: 'white',
-    borderRadius: 6,
-    padding: '6px 12px',
-    cursor: 'pointer',
-    fontSize: 13,
-    ...extra,
-  }
-}
-
 export default function FixedCostsSection() {
   const [costs, setCosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -73,35 +61,24 @@ export default function FixedCostsSection() {
 
   return (
     <div className="card">
-      <h3 style={{ marginTop: 0 }}>Fixed costs</h3>
-      <p style={{ color: '#6b7280', fontSize: 14, marginTop: -8 }}>
+      <h3>Fixed costs</h3>
+      <p className="note">
         Charges added to every bill regardless of consumption — service fees, delivery, taxes,
         and so on.
       </p>
 
       {!loading && costs.length === 0 && (
-        <p style={{ color: '#6b7280', fontSize: 14 }}>No fixed costs yet.</p>
+        <p className="note">No fixed costs yet.</p>
       )}
 
       {costs.map((c) => (
-        <div
-          key={c.id}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 0',
-            borderBottom: '1px solid #eef0f2',
-          }}
-        >
+        <div key={c.id} className="row">
           <div style={{ fontSize: 14 }}>{c.name}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 500 }}>${Number(c.amount).toFixed(2)}</div>
-            <button
-              type="button"
-              style={secondaryBtnStyle({ color: '#b91c1c' })}
-              onClick={() => handleDelete(c.id)}
-            >
+            <div className="tabular-nums" style={{ fontSize: 14, fontWeight: 500 }}>
+              ${Number(c.amount).toFixed(2)}
+            </div>
+            <button type="button" className="ghost-danger" onClick={() => handleDelete(c.id)}>
               Delete
             </button>
           </div>
@@ -110,6 +87,7 @@ export default function FixedCostsSection() {
 
       {costs.length > 0 && (
         <div
+          className="tabular-nums"
           style={{
             display: 'flex',
             justifyContent: 'space-between',
