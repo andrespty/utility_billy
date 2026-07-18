@@ -77,7 +77,9 @@ export default function TargetSection() {
     if (rowId) {
       ;({ error: saveError } = await supabase.from('target_settings').update(payload).eq('id', rowId))
     } else {
-      ;({ error: saveError } = await supabase.from('target_settings').insert(payload))
+      ;({ error: saveError } = await supabase
+        .from('target_settings')
+        .upsert(payload, { onConflict: 'user_id' }))
     }
     setSaving(false)
 

@@ -122,8 +122,9 @@ export default function Billing() {
     [program, selectedCycle, readings, fixedCostsTotal]
   )
 
+  const today = todayIso()
   const isCurrentCycle = Boolean(
-    selectedCycle && todayIso() >= selectedCycle.start_date && todayIso() <= selectedCycle.end_date
+    selectedCycle && today >= selectedCycle.start_date && today <= selectedCycle.end_date
   )
 
   const targetActive = Boolean(targetSettings && targetSettings.enabled && Number(targetSettings.amount) > 0)
@@ -177,7 +178,6 @@ export default function Billing() {
     )
   }
 
-  const today = todayIso()
   const variance =
     estimate && actualDraft !== '' ? Number((Number(actualDraft) - estimate.total).toFixed(2)) : null
 
@@ -275,8 +275,9 @@ export default function Billing() {
 
               {targetPace.status === 'invalid_target' ? (
                 <div className="callout">
-                  Your target (${Number(targetSettings.amount).toFixed(2)}) doesn't leave room
-                  above your fixed costs (${fixedCostsTotal.toFixed(2)}). Update it in Settings.
+                  Unable to calculate a target pace from your target (${Number(targetSettings.amount).toFixed(2)}).
+                  Check that your target leaves room above fixed costs (${fixedCostsTotal.toFixed(2)}) and that
+                  your default rate program is configured with valid rates.
                 </div>
               ) : (
                 <>
