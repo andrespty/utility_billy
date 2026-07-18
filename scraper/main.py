@@ -1,13 +1,6 @@
 """
 Talgov Self-Service login + navigation automation using Playwright.
 
-This script:
-  1. Opens the Talgov self-service login page in Chromium.
-  2. Fills in your email/password (loaded from a local .env file).
-  3. Signs in and waits for the redirect to https://selfservice.talgov.com/home
-  4. Navigates to the usage page for a given account/service point.
-  5. Optionally saves the resulting HTML and a screenshot.
-
 Credentials are never hardcoded — they're read from environment variables
 via a local .env file (see .env.example). Do not commit your real .env file.
 """
@@ -42,10 +35,8 @@ LOGIN_URL = (
     "&x-client-SKU=ID_NET8_0"
     "&x-client-ver=8.7.0.0"
 )
-
-HOME_URL = "https://selfservice.talgov.com/home"
-TARGET_URL = "https://selfservice.talgov.com/usage/AP0332524/100382291"
-
+BASE_URL = "https://selfservice.talgov.com"
+HOME_URL = f"{BASE_URL}/home"
 OUTPUT_DIR = Path(__file__).parent / "output"
 
 # Max time to wait for various steps (milliseconds)
@@ -53,18 +44,19 @@ NAV_TIMEOUT_MS = 30_000
 LOGIN_REDIRECT_TIMEOUT_MS = 60_000  # generous, in case of MFA prompts
 
 
-def get_credentials() -> tuple[str, str]:
+def get_credentials() -> tuple[str, str, str]:
     """Load TALGOV_EMAIL / TALGOV_PASSWORD from a local .env file."""
     load_dotenv()  # loads .env from current working directory by default
     email = os.getenv("TALGOV_EMAIL")
     password = os.getenv("TALGOV_PASSWORD")
+    account_number = os.getenv("ACCOUNT_NUMBER")
 
-    if not email or not password:
+    if not email or not password or not account_number:
         sys.exit(
             "Missing credentials. Create a .env file (see .env.example) "
-            "with TALGOV_EMAIL and TALGOV_PASSWORD set."
+            "with TALGOV_EMAIL, TALGOV_PASSWORD, and ACCOUNT_NUMBER set."
         )
-    return email, password
+    return email, password, account_number
 
 
 def login(
@@ -118,37 +110,3 @@ def login(
         )
 
     print(f"Logged in. Current URL: {page.url}")
-
-
-def run(headless: bool = False) -> None:
-    email, password = get_credentials()
-    OUTPUT_DIR.mkdir(exist_ok=True)
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless)
-        context = browser.new_context()
-        page = context.new_page()
-        page.set_default_timeout(NAV_TIMEOUT_MS)
-
-        login(page, email, password)
-
-        print(f"Navigating to target page: {TARGET_URL}")
-        page.goto(TARGET_URL, wait_until="networkidle")
-
-        html_path = OUTPUT_DIR / "usage_page.html"
-        screenshot_path = OUTPUT_DIR / "usage_page.png"
-        html_path.write_text(page.content())
-        page.screenshot(path=str(screenshot_path), full_page=True)
-
-        print(f"Saved page HTML to: {html_path}")
-        print(f"Saved screenshot to: {screenshot_path}")
-
-        context.close()
-        browser.close()
-
-
-if __name__ == "__main__":
-    # Default to headed mode so you can watch/intervene (e.g. if MFA pops up).
-    # Pass --headless to run without a visible window.
-    headless_flag = "--headless" in sys.argv
-    run(headless=headless_flag)
