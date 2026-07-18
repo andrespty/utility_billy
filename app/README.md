@@ -133,3 +133,16 @@ the cycle is missing data or has fewer than 24 hours recorded, a warning shows
 so you know the estimate may be low. You can optionally enter the actual dollar
 amount from your real bill for each cycle — the app shows the difference from
 the estimate once you save it.
+
+## Adding the notes table
+
+`npx supabase db push` also applies `supabase/migrations/20260718000000_add_notes_table.sql`,
+which creates `notes` (owned per-user, same pattern as above). Run it once and
+you can start attaching notes from the Dashboard — a fresh project via
+`schema.sql` already includes this table.
+
+Click any bar on the Dashboard's daily consumption chart to open that day's
+notes. Each note is either a whole-day note or tied to a specific hour, so you
+can record context like "cooked with the oven" or "AC set to 80" alongside the
+usage that explains it. Days with at least one note show a small marker under
+their bar; notes can be added or deleted but not edited.
