@@ -7,17 +7,32 @@ export default function TargetSection() {
   const [enabled, setEnabled] = useState(false)
   const [fixedCostsTotal, setFixedCostsTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   async function load() {
     setLoading(true)
-    const [{ data: targetRow }, { data: costsData }] = await Promise.all([
+    setError('')
+    const [
+      { data: targetRow, error: targetError },
+      { data: costsData, error: costsError },
+    ] = await Promise.all([
       supabase.from('target_settings').select('*').maybeSingle(),
       supabase.from('fixed_costs').select('amount'),
     ])
 
+    if (targetError || costsError) {
+      setError(
+        `Couldn't load target settings: ${targetError?.message || costsError?.message}`
+      )
+      setLoadFailed(true)
+      setLoading(false)
+      return
+    }
+
+    setLoadFailed(false)
     setFixedCostsTotal((costsData || []).reduce((sum, c) => sum + Number(c.amount), 0))
 
     if (targetRow) {
@@ -40,6 +55,11 @@ export default function TargetSection() {
     e.preventDefault()
     setError('')
     setSaved(false)
+
+    if (loadFailed) {
+      setError("Couldn't confirm your current target settings, so saving is disabled. Reload the page and try again.")
+      return
+    }
 
     const amountNum = Number(amount)
     if (!amount || Number.isNaN(amountNum) || amountNum <= 0) {
@@ -108,7 +128,12 @@ export default function TargetSection() {
           </div>
         )}
 
-        <button className="primary" type="submit" disabled={saving || loading} style={{ marginTop: 8 }}>
+        <button
+          className="primary"
+          type="submit"
+          disabled={saving || loading || loadFailed}
+          style={{ marginTop: 8 }}
+        >
           {saving ? 'Saving…' : 'Save'}
         </button>
       </form>

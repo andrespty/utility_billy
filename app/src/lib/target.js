@@ -3,15 +3,15 @@
 
 import { calculateEnergyCharge } from './billing'
 
-function parseIsoDate(dateStr) {
+// UTC-based (not local-time) so the day count is never skewed by a DST
+// transition falling between the two dates.
+function parseIsoDateUTC(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number)
-  return new Date(y, m - 1, d)
+  return Date.UTC(y, m - 1, d)
 }
 
 function daysBetweenInclusive(startStr, endStr) {
-  const start = parseIsoDate(startStr)
-  const end = parseIsoDate(endStr)
-  return Math.round((end - start) / 86400000) + 1
+  return Math.round((parseIsoDateUTC(endStr) - parseIsoDateUTC(startStr)) / 86400000) + 1
 }
 
 function todayIso() {
@@ -37,18 +37,28 @@ export function targetKwhFromDollars(program, fixedCostsTotal, targetDollars, re
 
   const amountForEnergy = Number(targetDollars) - Number(fixedCostsTotal)
 
+  let kwh
+  let approximate = false
+
   if (program.type === 'fixed') {
-    const kwh = amountForEnergy / Number(program.fixed_rate)
-    return { kwh: Number(kwh.toFixed(3)), approximate: false, status: 'ok' }
+    kwh = amountForEnergy / Number(program.fixed_rate)
+  } else {
+    const { onPeakKwh, offPeakKwh, totalKwh } = calculateEnergyCharge(program, readingsSoFar || [])
+    const onPeakShare = totalKwh > 0 ? onPeakKwh / totalKwh : 0.5
+    const offPeakShare = totalKwh > 0 ? offPeakKwh / totalKwh : 0.5
+    const blendedRate =
+      onPeakShare * Number(program.on_peak_rate) + offPeakShare * Number(program.off_peak_rate)
+    kwh = amountForEnergy / blendedRate
+    approximate = true
   }
 
-  const { onPeakKwh, offPeakKwh, totalKwh } = calculateEnergyCharge(program, readingsSoFar || [])
-  const onPeakShare = totalKwh > 0 ? onPeakKwh / totalKwh : 0.5
-  const offPeakShare = totalKwh > 0 ? offPeakKwh / totalKwh : 0.5
-  const blendedRate =
-    onPeakShare * Number(program.on_peak_rate) + offPeakShare * Number(program.off_peak_rate)
-  const kwh = amountForEnergy / blendedRate
-  return { kwh: Number(kwh.toFixed(3)), approximate: true, status: 'ok' }
+  // Guards against a misconfigured program (zero/negative/missing rate)
+  // producing Infinity or NaN instead of a usable target.
+  if (!Number.isFinite(kwh) || kwh <= 0) {
+    return { kwh: null, approximate: false, status: 'invalid_target' }
+  }
+
+  return { kwh: Number(kwh.toFixed(3)), approximate, status: 'ok' }
 }
 
 // Returns { totalDays, daysElapsed, daysRemaining, kwhSoFar, targetKwh,
@@ -106,7 +116,7 @@ export function computeTargetPace({
   let status = completeness && completeness.missingDays > 0 ? 'incomplete_data' : 'ok'
 
   if (isCurrentCycle) {
-    daysElapsed = Math.min(daysBetweenInclusive(startDate, todayIso()), totalDays)
+    daysElapsed = Math.min(Math.max(daysBetweenInclusive(startDate, todayIso()), 1), totalDays)
     daysRemaining = Math.max(totalDays - daysElapsed, 0)
 
     if (kwhSoFar > targetKwh) {
