@@ -8,13 +8,16 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts'
 import { supabase } from '../supabaseClient'
 import { computeCompleteness, estimateCycleTotal, isWeekend } from '../lib/billing'
+import { computeTargetPace } from '../lib/target'
 import { dailyTotals } from '../lib/aggregate'
 
 const WEEKDAY_COLOR = '#3e4a5c'
 const WEEKEND_COLOR = '#a6300e'
+const TARGET_COLOR = '#9c7a17'
 
 function todayIso() {
   const d = new Date()
@@ -41,6 +44,7 @@ export default function Billing() {
   const [selectedId, setSelectedId] = useState(null)
   const [program, setProgram] = useState(null)
   const [fixedCostsTotal, setFixedCostsTotal] = useState(0)
+  const [targetSettings, setTargetSettings] = useState(null)
   const [readings, setReadings] = useState([])
   const [actualDraft, setActualDraft] = useState('')
   const [loadingMeta, setLoadingMeta] = useState(true)
@@ -50,11 +54,13 @@ export default function Billing() {
   useEffect(() => {
     async function loadMeta() {
       setLoadingMeta(true)
-      const [{ data: cyclesData }, { data: programsData }, { data: costsData }] = await Promise.all([
-        supabase.from('bill_cycles').select('*').order('start_date', { ascending: false }),
-        supabase.from('programs').select('*'),
-        supabase.from('fixed_costs').select('amount'),
-      ])
+      const [{ data: cyclesData }, { data: programsData }, { data: costsData }, { data: targetData }] =
+        await Promise.all([
+          supabase.from('bill_cycles').select('*').order('start_date', { ascending: false }),
+          supabase.from('programs').select('*'),
+          supabase.from('fixed_costs').select('amount'),
+          supabase.from('target_settings').select('*').maybeSingle(),
+        ])
 
       const today = todayIso()
       const list = cyclesData || []
@@ -63,6 +69,7 @@ export default function Billing() {
       setCycles(list)
       setProgram((programsData || []).find((p) => p.is_default) || null)
       setFixedCostsTotal((costsData || []).reduce((sum, c) => sum + Number(c.amount), 0))
+      setTargetSettings(targetData || null)
       setSelectedId(defaultCycle?.id ?? null)
       setLoadingMeta(false)
     }
@@ -115,6 +122,30 @@ export default function Billing() {
     [program, selectedCycle, readings, fixedCostsTotal]
   )
 
+  const today = todayIso()
+  const isCurrentCycle = Boolean(
+    selectedCycle && today >= selectedCycle.start_date && today <= selectedCycle.end_date
+  )
+
+  const targetActive = Boolean(targetSettings && targetSettings.enabled && Number(targetSettings.amount) > 0)
+
+  const targetPace = useMemo(
+    () =>
+      targetActive && selectedCycle
+        ? computeTargetPace({
+            program,
+            fixedCostsTotal,
+            targetDollars: Number(targetSettings.amount),
+            readings,
+            startDate: selectedCycle.start_date,
+            endDate: selectedCycle.end_date,
+            isCurrentCycle,
+            completeness,
+          })
+        : null,
+    [targetActive, selectedCycle, program, fixedCostsTotal, targetSettings, readings, isCurrentCycle, completeness]
+  )
+
   const chartData = useMemo(
     () => dailyTotals(readings).map((d) => ({ ...d, weekend: isWeekend(d.date) })),
     [readings]
@@ -147,7 +178,6 @@ export default function Billing() {
     )
   }
 
-  const today = todayIso()
   const variance =
     estimate && actualDraft !== '' ? Number((Number(actualDraft) - estimate.total).toFixed(2)) : null
 
@@ -239,6 +269,72 @@ export default function Billing() {
             </div>
           )}
 
+          {targetPace && targetPace.status !== 'no_program' && (
+            <div className="card">
+              <h3>Target</h3>
+
+              {targetPace.status === 'invalid_target' ? (
+                <div className="callout">
+                  Unable to calculate a target pace from your target (${Number(targetSettings.amount).toFixed(2)}).
+                  Check that your target leaves room above fixed costs (${fixedCostsTotal.toFixed(2)}) and that
+                  your default rate program is configured with valid rates.
+                </div>
+              ) : (
+                <>
+                  <div className="stats-grid">
+                    <div className="stat-box">
+                      <div className="label">
+                        Target kWh{targetPace.approximate ? ' (approximate)' : ''}
+                      </div>
+                      <div className="value tabular-nums">{targetPace.targetKwh}</div>
+                    </div>
+
+                    {targetPace.status !== 'cycle_ending_today' && (
+                      <div className="stat-box">
+                        <div className="label">Flat daily pace</div>
+                        <div className="value tabular-nums">{targetPace.flatDailyKwh}</div>
+                      </div>
+                    )}
+
+                    {isCurrentCycle &&
+                      (targetPace.status === 'ok' || targetPace.status === 'incomplete_data') && (
+                        <div className="stat-box emphasis">
+                          <div className="label">Adaptive daily pace</div>
+                          <div className="value tabular-nums">{targetPace.adaptiveDailyKwh}</div>
+                        </div>
+                      )}
+                  </div>
+
+                  {targetPace.status === 'over_target' && (
+                    <div className="callout">
+                      You've used {(targetPace.kwhSoFar - targetPace.targetKwh).toFixed(1)} kWh
+                      more than your target for this cycle — it's no longer reachable this cycle.
+                    </div>
+                  )}
+
+                  {targetPace.status === 'cycle_ending_today' &&
+                    (targetPace.kwhSoFar <= targetPace.targetKwh ? (
+                      <div className="note">
+                        You met your target this cycle, with{' '}
+                        {(targetPace.targetKwh - targetPace.kwhSoFar).toFixed(1)} kWh to spare.
+                      </div>
+                    ) : (
+                      <div className="callout">
+                        You exceeded your target this cycle by{' '}
+                        {(targetPace.kwhSoFar - targetPace.targetKwh).toFixed(1)} kWh.
+                      </div>
+                    ))}
+
+                  {!isCurrentCycle && (
+                    <div className="note">
+                      Adaptive pacing only applies to the cycle containing today.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           <div className="card">
             <h3>Daily consumption</h3>
 
@@ -276,6 +372,37 @@ export default function Billing() {
                         <Cell key={entry.date} fill={entry.weekend ? WEEKEND_COLOR : WEEKDAY_COLOR} />
                       ))}
                     </Bar>
+                    {targetPace && targetPace.flatDailyKwh != null && (
+                      <ReferenceLine
+                        y={targetPace.flatDailyKwh}
+                        stroke={TARGET_COLOR}
+                        strokeWidth={1.5}
+                        label={{
+                          value: 'Target',
+                          position: 'right',
+                          fill: TARGET_COLOR,
+                          fontSize: 11,
+                          fontFamily: 'IBM Plex Sans',
+                        }}
+                      />
+                    )}
+                    {targetPace &&
+                      targetPace.adaptiveDailyKwh != null &&
+                      targetPace.adaptiveDailyKwh !== targetPace.flatDailyKwh && (
+                        <ReferenceLine
+                          y={targetPace.adaptiveDailyKwh}
+                          stroke={TARGET_COLOR}
+                          strokeDasharray="4 4"
+                          strokeWidth={1.5}
+                          label={{
+                            value: 'Pace',
+                            position: 'right',
+                            fill: TARGET_COLOR,
+                            fontSize: 11,
+                            fontFamily: 'IBM Plex Sans',
+                          }}
+                        />
+                      )}
                   </BarChart>
                 </ResponsiveContainer>
                 <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
