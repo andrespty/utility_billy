@@ -6,6 +6,7 @@
 --   supabase/migrations/20260717120000_add_user_scoping.sql
 --   supabase/migrations/20260717130000_add_settings_tables.sql
 --   supabase/migrations/20260717140000_add_billing_fields.sql
+--   supabase/migrations/20260718000000_add_target.sql
 -- which upgrade an existing database without losing data.
 
 create table if not exists public.energy_readings (
@@ -123,3 +124,20 @@ create index if not exists idx_bill_cycles_user_start on public.bill_cycles (use
 create unique index if not exists idx_programs_one_default_per_user
   on public.programs (user_id)
   where is_default;
+
+-- Target Bill: a single global dollar target + on/off toggle, per user.
+
+create table if not exists public.target_settings (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  amount numeric not null check (amount > 0),
+  enabled boolean not null default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  constraint target_settings_one_per_user unique (user_id)
+);
+
+alter table public.target_settings enable row level security;
+
+create policy "owner_all_target_settings" on public.target_settings
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
