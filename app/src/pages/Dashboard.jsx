@@ -3,15 +3,15 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts'
 import { supabase } from '../supabaseClient'
 import { dailyTotals, hourlyProfile, computeStats } from '../lib/aggregate'
+import { hourLabel } from '../lib/hours'
 
 const RANGE_OPTIONS = [
   { label: 'Last 7 days', days: 7 },
@@ -19,6 +19,17 @@ const RANGE_OPTIONS = [
   { label: 'Last 90 days', days: 90 },
   { label: 'All time', days: null },
 ]
+
+const MONTH_ABBR = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
+// Formats an ISO "YYYY-MM-DD" string as "Jul-01" without going through Date
+// (avoids timezone off-by-one shifts for date-only strings).
+function formatMonthDay(isoDate) {
+  const [, month, day] = isoDate.split('-')
+  return `${MONTH_ABBR[Number(month) - 1]}-${day}`
+}
 
 function isoDaysAgo(days) {
   const d = new Date()
@@ -69,6 +80,10 @@ export default function Dashboard() {
   const daily = useMemo(() => dailyTotals(rows), [rows])
   const hourly = useMemo(() => hourlyProfile(rows), [rows])
   const stats = useMemo(() => computeStats(rows), [rows])
+  const dailyMean = useMemo(
+    () => (daily.length ? daily.reduce((sum, d) => sum + d.kwh, 0) / daily.length : 0),
+    [daily]
+  )
 
   return (
     <div>
@@ -116,10 +131,11 @@ export default function Dashboard() {
           <div className="card">
             <h3>Daily consumption (kWh)</h3>
             <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={daily} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+              <BarChart data={daily} margin={{ top: 4, right: 64, left: -8, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="#e7e2d3" />
                 <XAxis
                   dataKey="date"
+                  tickFormatter={formatMonthDay}
                   tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
                   axisLine={{ stroke: '#d8d2c2' }}
                   tickLine={false}
@@ -130,6 +146,7 @@ export default function Dashboard() {
                   tickLine={false}
                 />
                 <Tooltip
+                  labelFormatter={formatMonthDay}
                   contentStyle={{
                     background: '#ffffff',
                     border: '1px solid #d8d2c2',
@@ -138,8 +155,21 @@ export default function Dashboard() {
                     fontSize: 12,
                   }}
                 />
-                <Line type="monotone" dataKey="kwh" stroke="#3e4a5c" strokeWidth={2} dot={false} />
-              </LineChart>
+                <Bar dataKey="kwh" fill="#3e4a5c" />
+                <ReferenceLine
+                  y={dailyMean}
+                  stroke="#a6300e"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{
+                    value: `Avg ${dailyMean.toFixed(1)} kWh`,
+                    position: 'right',
+                    fill: '#a6300e',
+                    fontSize: 11,
+                    fontFamily: 'IBM Plex Sans',
+                  }}
+                />
+              </BarChart>
             </ResponsiveContainer>
           </div>
 
@@ -149,11 +179,12 @@ export default function Dashboard() {
               <BarChart data={hourly} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="#e7e2d3" />
                 <XAxis
-                  dataKey="label"
+                  dataKey="hour"
+                  tickFormatter={hourLabel}
                   tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
                   axisLine={{ stroke: '#d8d2c2' }}
                   tickLine={false}
-                  interval={1}
+                  interval={2}
                 />
                 <YAxis
                   tick={{ fontSize: 11, fill: '#5c5550', fontFamily: 'IBM Plex Sans' }}
@@ -161,6 +192,7 @@ export default function Dashboard() {
                   tickLine={false}
                 />
                 <Tooltip
+                  labelFormatter={hourLabel}
                   contentStyle={{
                     background: '#ffffff',
                     border: '1px solid #d8d2c2',
