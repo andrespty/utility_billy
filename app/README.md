@@ -16,6 +16,8 @@ utility CSV exports. Free to host, single-user, backed by a free Supabase projec
 - The Billing tab estimates the cost of each cycle using whichever program is
   marked default, plus your fixed costs, and lets you record the actual bill
   amount to compare against the estimate.
+- You can optionally set a target bill amount in Settings; when turned on, the
+  Billing tab shows a daily kWh pace to help you hit it.
 
 ## 1. Create a Supabase project (free)
 
@@ -133,6 +135,36 @@ the cycle is missing data or has fewer than 24 hours recorded, a warning shows
 so you know the estimate may be low. You can optionally enter the actual dollar
 amount from your real bill for each cycle — the app shows the difference from
 the estimate once you save it.
+
+## Adding the target bill table
+
+`npx supabase db push` also applies `supabase/migrations/20260718000000_add_target.sql`,
+which creates `target_settings` (one row per user, same ownership pattern as above).
+Run it, then set a target in Settings to see pacing on the Billing tab.
+
+### What the Target section stores
+
+- **Target settings**: a single global dollar target for your bill, plus a toggle
+  for whether to show target tracking on the Billing tab. There's at most one row
+  per user — saving always updates it in place. The target amount must be strictly
+  more than your current fixed costs total, since that's the floor a bill can't
+  go below.
+
+## How the Billing tab shows target pacing
+
+When target tracking is turned on and a valid target is set, the Billing tab
+converts your dollar target into a target kWh using the default rate program and
+your fixed costs, then shows:
+
+- A **flat daily pace**: target kWh divided evenly across the whole cycle.
+- For the cycle containing today only, an **adaptive daily pace**: how many kWh/day
+  you can still use for the rest of the cycle, given what you've already used.
+- Both as reference lines on the daily consumption chart.
+
+For time-of-use programs, the target kWh is approximate — it's derived from a
+blended rate based on the on-peak/off-peak split of the cycle's readings so far
+(falling back to a 50/50 split before any readings come in), and updates as more
+data arrives. For fixed-rate programs, it's exact.
 
 ## Adding the notes table
 

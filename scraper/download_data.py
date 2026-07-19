@@ -4,7 +4,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 import usage as usage_mod
-from main import login, get_credentials, OUTPUT_DIR, BASE_URL
+from auth import login, get_credentials, OUTPUT_DIR, BASE_URL
 
 def download_usage_day(target_date: date, headless: bool, output_dir: Path) -> None:
     """
