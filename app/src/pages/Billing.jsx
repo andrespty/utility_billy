@@ -17,7 +17,6 @@ import { dailyTotals } from '../lib/aggregate'
 
 const WEEKDAY_COLOR = '#3e4a5c'
 const WEEKEND_COLOR = '#a6300e'
-const TARGET_COLOR = '#9c7a17'
 
 function todayIso() {
   const d = new Date()
@@ -345,7 +344,7 @@ export default function Billing() {
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+                  <BarChart data={chartData} margin={{ top: 4, right: 44, left: -8, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="#e7e2d3" />
                     <XAxis
                       dataKey="date"
@@ -375,12 +374,12 @@ export default function Billing() {
                     {targetPace && targetPace.flatDailyKwh != null && (
                       <ReferenceLine
                         y={targetPace.flatDailyKwh}
-                        stroke={TARGET_COLOR}
+                        stroke="var(--accent-gold)"
                         strokeWidth={1.5}
                         label={{
                           value: 'Target',
-                          position: 'right',
-                          fill: TARGET_COLOR,
+                          position: 'insideTopRight',
+                          fill: 'var(--accent-gold)',
                           fontSize: 11,
                           fontFamily: 'IBM Plex Sans',
                         }}
@@ -391,13 +390,13 @@ export default function Billing() {
                       targetPace.adaptiveDailyKwh !== targetPace.flatDailyKwh && (
                         <ReferenceLine
                           y={targetPace.adaptiveDailyKwh}
-                          stroke={TARGET_COLOR}
+                          stroke="var(--accent-gold)"
                           strokeDasharray="4 4"
                           strokeWidth={1.5}
                           label={{
                             value: 'Pace',
-                            position: 'right',
-                            fill: TARGET_COLOR,
+                            position: 'insideBottomRight',
+                            fill: 'var(--accent-gold)',
                             fontSize: 11,
                             fontFamily: 'IBM Plex Sans',
                           }}
