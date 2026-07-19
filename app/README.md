@@ -165,3 +165,16 @@ For time-of-use programs, the target kWh is approximate — it's derived from a
 blended rate based on the on-peak/off-peak split of the cycle's readings so far
 (falling back to a 50/50 split before any readings come in), and updates as more
 data arrives. For fixed-rate programs, it's exact.
+
+## Adding the notes table
+
+`npx supabase db push` also applies `supabase/migrations/20260718000000_add_notes_table.sql`,
+which creates `notes` (owned per-user, same pattern as above). Run it once and
+you can start attaching notes from the Dashboard — a fresh project via
+`schema.sql` already includes this table.
+
+Click any bar on the Dashboard's daily consumption chart to open that day's
+notes. Each note is either a whole-day note or tied to a specific hour, so you
+can record context like "cooked with the oven" or "AC set to 80" alongside the
+usage that explains it. Days with at least one note show a small marker under
+their bar; notes can be added or deleted but not edited.

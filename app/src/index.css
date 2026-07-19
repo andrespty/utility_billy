@@ -253,6 +253,26 @@ input[type='checkbox'] {
   width: auto;
 }
 
+.textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  margin-bottom: var(--space-4);
+  transition: border-color 140ms ease-out;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--data-1);
+}
+
 button {
   font-family: var(--font-sans);
 }
@@ -382,6 +402,41 @@ button.ghost:hover {
   width: 9px;
   height: 9px;
   display: inline-block;
+}
+
+/* ---------- Modal (e.g. Dashboard day notes) ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 27, 26, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  z-index: 100;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - var(--space-7));
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.modal-header h3 {
+  margin: 0;
 }
 
 /* ---------- Login ---------- */

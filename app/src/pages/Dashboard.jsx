@@ -12,6 +12,7 @@ import {
 import { supabase } from '../supabaseClient'
 import { dailyTotals, hourlyProfile, computeStats } from '../lib/aggregate'
 import { hourLabel } from '../lib/hours'
+import DayNotesModal from '../components/DayNotesModal'
 
 const RANGE_OPTIONS = [
   { label: 'Last 7 days', days: 7 },
@@ -42,6 +43,20 @@ export default function Dashboard() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [notesDates, setNotesDates] = useState(new Set())
+  const [openDate, setOpenDate] = useState(null)
+
+  async function loadNotesDates() {
+    const range = RANGE_OPTIONS[rangeIdx]
+    let query = supabase.from('notes').select('note_date, hour')
+
+    if (range.days !== null) {
+      query = query.gte('note_date', isoDaysAgo(range.days))
+    }
+
+    const { data, error } = await query
+    if (!error) setNotesDates(new Set((data || []).map((n) => n.note_date)))
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -72,6 +87,7 @@ export default function Dashboard() {
     }
 
     load()
+    loadNotesDates()
     return () => {
       cancelled = true
     }
@@ -84,6 +100,20 @@ export default function Dashboard() {
     () => (daily.length ? daily.reduce((sum, d) => sum + d.kwh, 0) / daily.length : 0),
     [daily]
   )
+
+  function renderNoteMarker({ x, y, width, index }) {
+    const date = daily[index]?.date
+    if (!date || !notesDates.has(date)) return null
+    return (
+      <circle
+        key={`note-marker-${date}`}
+        cx={x + width / 2}
+        cy={y - 6}
+        r={3}
+        style={{ fill: 'var(--accent-gold)' }}
+      />
+    )
+  }
 
   return (
     <div>
@@ -130,8 +160,9 @@ export default function Dashboard() {
 
           <div className="card">
             <h3>Daily consumption (kWh)</h3>
+            <p className="note">Click a bar to add or view notes for that day.</p>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={daily} margin={{ top: 4, right: 64, left: -8, bottom: 0 }}>
+              <BarChart data={daily} margin={{ top: 14, right: 64, left: -8, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="#e7e2d3" />
                 <XAxis
                   dataKey="date"
@@ -155,7 +186,13 @@ export default function Dashboard() {
                     fontSize: 12,
                   }}
                 />
-                <Bar dataKey="kwh" fill="#3e4a5c" />
+                <Bar
+                  dataKey="kwh"
+                  fill="#3e4a5c"
+                  cursor="pointer"
+                  onClick={(data) => setOpenDate(data.payload.date)}
+                  label={renderNoteMarker}
+                />
                 <ReferenceLine
                   y={dailyMean}
                   stroke="#a6300e"
@@ -206,6 +243,16 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </>
+      )}
+
+      {openDate && (
+        <DayNotesModal
+          date={openDate}
+          onClose={() => {
+            setOpenDate(null)
+            loadNotesDates()
+          }}
+        />
       )}
     </div>
   )

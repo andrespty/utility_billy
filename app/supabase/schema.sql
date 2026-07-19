@@ -6,6 +6,7 @@
 --   supabase/migrations/20260717120000_add_user_scoping.sql
 --   supabase/migrations/20260717130000_add_settings_tables.sql
 --   supabase/migrations/20260717140000_add_billing_fields.sql
+--   supabase/migrations/20260718000000_add_notes_table.sql
 --   supabase/migrations/20260718000000_add_target.sql
 -- which upgrade an existing database without losing data.
 
@@ -141,3 +142,21 @@ alter table public.target_settings enable row level security;
 
 create policy "owner_all_target_settings" on public.target_settings
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Notes: free-text notes attached to a day, or a specific hour within a day.
+
+create table if not exists public.notes (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  note_date date not null,
+  hour smallint check (hour between 0 and 23), -- null = whole-day note
+  body text not null,
+  created_at timestamptz default now()
+);
+
+alter table public.notes enable row level security;
+
+create policy "owner_all_notes" on public.notes
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create index if not exists idx_notes_user_date on public.notes (user_id, note_date);
