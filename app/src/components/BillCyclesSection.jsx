@@ -15,6 +15,8 @@ export default function BillCyclesSection() {
   const [endDate, setEndDate] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [actualDrafts, setActualDrafts] = useState({})
+  const [savingActualId, setSavingActualId] = useState(null)
 
   async function load() {
     setLoading(true)
@@ -22,7 +24,15 @@ export default function BillCyclesSection() {
       .from('bill_cycles')
       .select('*')
       .order('start_date', { ascending: false })
-    if (!error) setCycles(data || [])
+    if (!error) {
+      setCycles(data || [])
+      const drafts = {}
+      for (const c of data || []) {
+        drafts[c.id] =
+          c.actual_amount === null || c.actual_amount === undefined ? '' : String(c.actual_amount)
+      }
+      setActualDrafts(drafts)
+    }
     setLoading(false)
   }
 
@@ -64,6 +74,25 @@ export default function BillCyclesSection() {
     load()
   }
 
+  function handleActualChange(id, value) {
+    setActualDrafts((d) => ({ ...d, [id]: value }))
+  }
+
+  async function handleSaveActual(cycle) {
+    const draft = actualDrafts[cycle.id] ?? ''
+    if (draft !== '' && Number.isNaN(Number(draft))) return
+
+    const value = draft === '' ? null : Number(draft)
+    const current =
+      cycle.actual_amount === null || cycle.actual_amount === undefined ? null : Number(cycle.actual_amount)
+    if (value === current) return
+
+    setSavingActualId(cycle.id)
+    await supabase.from('bill_cycles').update({ actual_amount: value }).eq('id', cycle.id)
+    setSavingActualId(null)
+    load()
+  }
+
   const today = todayIso()
 
   return (
@@ -71,7 +100,8 @@ export default function BillCyclesSection() {
       <h3>Bill cycles</h3>
       <p className="note">
         Add each billing period's start and end date as you go. The cycle covering today is
-        flagged as current.
+        flagged as current. Enter the actual bill amount once you have it, to compare against
+        the estimate on the Dashboard.
       </p>
 
       {!loading && cycles.length === 0 && (
@@ -88,9 +118,34 @@ export default function BillCyclesSection() {
               </span>
               {isCurrent && <span className="badge">Current</span>}
             </div>
-            <button type="button" className="ghost-danger" onClick={() => handleDelete(c.id)}>
-              Delete
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                  }}
+                >
+                  Actual $
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="—"
+                  value={actualDrafts[c.id] ?? ''}
+                  onChange={(e) => handleActualChange(c.id, e.target.value)}
+                  onBlur={() => handleSaveActual(c)}
+                  disabled={savingActualId === c.id}
+                  style={{ width: 90, marginBottom: 0 }}
+                />
+              </div>
+              <button type="button" className="ghost-danger" onClick={() => handleDelete(c.id)}>
+                Delete
+              </button>
+            </div>
           </div>
         )
       })}
