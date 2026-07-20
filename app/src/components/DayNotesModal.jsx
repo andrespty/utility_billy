@@ -70,6 +70,11 @@ export default function DayNotesModal({ date, onClose }) {
     }))
   }, [readings])
 
+  const totalKwh = useMemo(
+    () => Number(readings.reduce((sum, r) => sum + Number(r.consumption), 0).toFixed(2)),
+    [readings]
+  )
+
   const notedHours = useMemo(
     () => new Set(notes.filter((n) => n.hour !== null).map((n) => n.hour)),
     [notes]
@@ -142,6 +147,9 @@ export default function DayNotesModal({ date, onClose }) {
           </button>
         </div>
 
+        <div className="tabular-nums" style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+          Total: {totalKwh} kWh
+        </div>
         <p className="note" style={{ marginTop: 0 }}>
           Click an hour bar to add a note for that hour.
         </p>

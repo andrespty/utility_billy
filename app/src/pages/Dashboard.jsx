@@ -20,11 +20,11 @@ import UsageStats from '../components/UsageStats'
 import CycleStats from '../components/CycleStats'
 
 const RANGE_OPTIONS = [
+  { label: 'Billing Cycle', cycle: true },
   { label: 'Last 7 days', days: 7 },
   { label: 'Last 30 days', days: 30 },
   { label: 'Last 90 days', days: 90 },
   { label: 'All time', days: null },
-  { label: 'Billing Cycle', cycle: true },
 ]
 
 const MONTH_ABBR = [
@@ -67,8 +67,24 @@ function LegendDot({ color, label }) {
   )
 }
 
+function LegendLine({ color, dashed, label }) {
+  return (
+    <div className="legend-dot">
+      <span
+        style={{
+          display: 'inline-block',
+          width: 14,
+          height: 0,
+          borderTop: `2px ${dashed ? 'dashed' : 'solid'} ${color}`,
+        }}
+      />
+      {label}
+    </div>
+  )
+}
+
 export default function Dashboard() {
-  const [rangeIdx, setRangeIdx] = useState(1) // default: last 30 days
+  const [rangeIdx, setRangeIdx] = useState(0) // default: Billing Cycle
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -277,7 +293,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {isCycleMode && selectedCycle && completeness && completeness.missingDays > 0 && (
+      {isCycleMode && selectedCycle && !isCurrentCycle && completeness && completeness.missingDays > 0 && (
         <div className="card callout">
           {completeness.missingDays} of {completeness.totalDays} days in this cycle are
           missing or have incomplete data — totals below may be low.
@@ -305,7 +321,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={daily} margin={{ top: 14, right: 64, left: -8, bottom: 0 }}>
+                  <BarChart data={daily} margin={{ top: 14, right: 8, left: -8, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="#e7e2d3" />
                     <XAxis
                       dataKey="date"
@@ -339,34 +355,9 @@ export default function Dashboard() {
                         <Cell key={entry.date} fill={isWeekend(entry.date) ? WEEKEND_COLOR : WEEKDAY_COLOR} />
                       ))}
                     </Bar>
-                    {!isCycleMode && (
-                      <ReferenceLine
-                        y={dailyMean}
-                        stroke="#a6300e"
-                        strokeDasharray="4 4"
-                        strokeWidth={1}
-                        label={{
-                          value: `Avg ${dailyMean.toFixed(1)} kWh`,
-                          position: 'right',
-                          fill: '#a6300e',
-                          fontSize: 11,
-                          fontFamily: 'IBM Plex Sans',
-                        }}
-                      />
-                    )}
+                    <ReferenceLine y={dailyMean} stroke="#a6300e" strokeDasharray="4 4" strokeWidth={1} />
                     {isCycleMode && targetPace && targetPace.flatDailyKwh != null && (
-                      <ReferenceLine
-                        y={targetPace.flatDailyKwh}
-                        stroke="var(--accent-gold)"
-                        strokeWidth={1.5}
-                        label={{
-                          value: 'Target',
-                          position: 'insideTopRight',
-                          fill: 'var(--accent-gold)',
-                          fontSize: 11,
-                          fontFamily: 'IBM Plex Sans',
-                        }}
-                      />
+                      <ReferenceLine y={targetPace.flatDailyKwh} stroke="var(--accent-gold)" strokeWidth={1.5} />
                     )}
                     {isCycleMode &&
                       targetPace &&
@@ -377,20 +368,27 @@ export default function Dashboard() {
                           stroke="var(--accent-gold)"
                           strokeDasharray="4 4"
                           strokeWidth={1.5}
-                          label={{
-                            value: 'Pace',
-                            position: 'insideBottomRight',
-                            fill: 'var(--accent-gold)',
-                            fontSize: 11,
-                            fontFamily: 'IBM Plex Sans',
-                          }}
                         />
                       )}
                   </BarChart>
                 </ResponsiveContainer>
-                <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+                <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
                   <LegendDot color={WEEKDAY_COLOR} label="Weekday" />
                   <LegendDot color={WEEKEND_COLOR} label="Weekend" />
+                  <LegendLine color="#a6300e" dashed label={`Avg ${dailyMean.toFixed(1)} kWh`} />
+                  {isCycleMode && targetPace && targetPace.flatDailyKwh != null && (
+                    <LegendLine color="var(--accent-gold)" label={`Target ${targetPace.flatDailyKwh} kWh`} />
+                  )}
+                  {isCycleMode &&
+                    targetPace &&
+                    targetPace.adaptiveDailyKwh != null &&
+                    targetPace.adaptiveDailyKwh !== targetPace.flatDailyKwh && (
+                      <LegendLine
+                        color="var(--accent-gold)"
+                        dashed
+                        label={`Pace ${targetPace.adaptiveDailyKwh} kWh`}
+                      />
+                    )}
                 </div>
               </>
             )}
