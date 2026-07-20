@@ -13,7 +13,7 @@ import {
 import { supabase } from '../supabaseClient'
 import { dailyTotals, hourlyProfile, computeStats } from '../lib/aggregate'
 import { computeCompleteness, estimateCycleTotal, isWeekend } from '../lib/billing'
-import { computeTargetPace } from '../lib/target'
+import { computeTargetPace, computeCycleProgress, projectCycleTotal } from '../lib/target'
 import { hourLabel } from '../lib/hours'
 import DayNotesModal from '../components/DayNotesModal'
 import UsageStats from '../components/UsageStats'
@@ -212,6 +212,24 @@ export default function Dashboard() {
     [isCycleMode, program, selectedCycle, rows, fixedCostsTotal]
   )
 
+  const cycleProgress = useMemo(
+    () =>
+      isCycleMode && selectedCycle
+        ? computeCycleProgress({
+            readings: rows,
+            startDate: selectedCycle.start_date,
+            endDate: selectedCycle.end_date,
+            isCurrentCycle,
+          })
+        : null,
+    [isCycleMode, selectedCycle, rows, isCurrentCycle]
+  )
+
+  const projection = useMemo(
+    () => (isCycleMode && program ? projectCycleTotal(program, rows, cycleProgress, fixedCostsTotal) : null),
+    [isCycleMode, program, rows, cycleProgress, fixedCostsTotal]
+  )
+
   const targetActive = Boolean(targetSettings && targetSettings.enabled && Number(targetSettings.amount) > 0)
 
   const targetPace = useMemo(
@@ -398,6 +416,8 @@ export default function Dashboard() {
             <CycleStats
               program={program}
               estimate={estimate}
+              cycleProgress={cycleProgress}
+              projection={projection}
               actualAmount={selectedCycle?.actual_amount}
               targetActive={targetActive}
               targetPace={targetPace}
