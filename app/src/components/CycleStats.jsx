@@ -1,3 +1,5 @@
+import TargetProgressBar from './TargetProgressBar'
+
 // Stats row shown under the daily consumption chart when the Dashboard's
 // range control is set to "Billing Cycle".
 //
@@ -174,6 +176,16 @@ export default function CycleStats({
                   : ''}
                 .
               </p>
+
+              <TargetProgressBar
+                kwhSoFar={targetPace.kwhSoFar}
+                targetKwh={targetPace.targetKwh}
+                expectedKwh={
+                  targetPace.flatDailyKwh != null && targetPace.daysElapsed != null
+                    ? Number((targetPace.flatDailyKwh * targetPace.daysElapsed).toFixed(1))
+                    : null
+                }
+              />
 
               {targetPace.status === 'over_target' && (
                 <div className="callout">
