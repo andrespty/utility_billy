@@ -3,7 +3,6 @@ import { supabase } from './supabaseClient'
 import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Upload from './pages/Upload.jsx'
-import Billing from './pages/Billing.jsx'
 import Settings from './pages/Settings.jsx'
 
 export default function App() {
@@ -33,7 +32,6 @@ export default function App() {
   const sections = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'upload', label: 'Upload' },
-    { id: 'billing', label: 'Billing' },
     { id: 'settings', label: 'Settings' },
   ]
 
@@ -60,7 +58,6 @@ export default function App() {
       <div className="main">
         {tab === 'dashboard' && <Dashboard />}
         {tab === 'upload' && <Upload />}
-        {tab === 'billing' && <Billing />}
         {tab === 'settings' && <Settings />}
       </div>
     </div>

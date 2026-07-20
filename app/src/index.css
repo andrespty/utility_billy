@@ -423,7 +423,7 @@ button.ghost:hover {
   border-radius: var(--radius);
   padding: var(--space-5);
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   max-height: calc(100vh - var(--space-7));
   overflow-y: auto;
 }

@@ -1,4 +1,4 @@
-// Target bill pacing helpers used by the Billing tab.
+// Target bill pacing helpers used by the Dashboard's Billing Cycle view.
 // Pure functions only — no Supabase calls.
 
 import { calculateEnergyCharge } from './billing'
