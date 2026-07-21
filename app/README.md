@@ -20,6 +20,10 @@ utility CSV exports. Free to host, single-user, backed by a free Supabase projec
   costs, and shows the variance against the actual bill amount if you've entered one.
 - You can optionally set a target bill amount in Settings; when turned on, the
   Dashboard's Billing Cycle view shows a daily kWh pace to help you hit it.
+- The Logs tab lets you jot down what you're doing in the moment ("doing laundry"),
+  since the utility's data usually shows up a day or two later. Logs are just notes
+  keyed by date (and optionally hour), so a log added today is already attached once
+  that day's readings arrive — nothing to reconnect.
 
 ## 1. Create a Supabase project (free)
 

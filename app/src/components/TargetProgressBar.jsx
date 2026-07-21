@@ -1,41 +1,49 @@
 // Visual "how much of your target budget you've used" bar for the current
-// cycle: a filled track for kWh used so far, a dark tick for the target
-// itself, and a faint tick for where you'd be if you'd used exactly an
-// even (flat) pace up to today — so pace-ahead/pace-behind is visible at a
-// glance, without reading numbers.
+// cycle. The bar's full width IS the target (0 kWh on the left, target kWh
+// on the right, no padding past it), so target is always literally at the
+// end of the bar. The fill shows kWh used so far, capped at 100% width —
+// once you're over target the whole bar goes solid red and a note below
+// states the overage explicitly, rather than leaving ambiguous empty track.
+// A thin marker shows where an even (flat) pace would put you by today.
+// Everything is also spelled out in a legend row below so nothing has to
+// be inferred from position alone.
 
 export default function TargetProgressBar({ kwhSoFar, targetKwh, expectedKwh }) {
-  const scaleMax = Math.max(targetKwh, kwhSoFar, expectedKwh || 0) * 1.05 || 1
   const overTarget = kwhSoFar > targetKwh
-
-  const fillPct = Math.min((kwhSoFar / scaleMax) * 100, 100)
-  const targetPct = Math.min((targetKwh / scaleMax) * 100, 100)
-  const expectedPct = expectedKwh != null ? Math.min((expectedKwh / scaleMax) * 100, 100) : null
+  const fillColor = overTarget ? 'var(--data-2)' : 'var(--accent-gold)'
+  const fillPct = targetKwh > 0 ? Math.min((kwhSoFar / targetKwh) * 100, 100) : 0
+  const expectedPct =
+    expectedKwh != null && targetKwh > 0 ? Math.min((expectedKwh / targetKwh) * 100, 100) : null
 
   return (
     <div style={{ marginBottom: 12 }}>
       <div className="progress-track">
-        <div
-          className="progress-fill"
-          style={{
-            width: `${fillPct}%`,
-            background: overTarget ? 'var(--data-2)' : 'var(--accent-gold)',
-          }}
-        />
-        {expectedPct !== null && (
-          <div
-            className="progress-marker"
-            style={{ left: `${expectedPct}%` }}
-            title={`Even pace would put you at ${expectedKwh} kWh by now`}
-          />
+        <div className="progress-fill" style={{ width: `${fillPct}%`, background: fillColor }} />
+        {expectedPct !== null && <div className="progress-marker" style={{ left: `${expectedPct}%` }} />}
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+        <div className="legend-dot">
+          <span className="swatch" style={{ background: fillColor }} />
+          Used {kwhSoFar} kWh
+        </div>
+        {expectedKwh != null && (
+          <div className="legend-dot">
+            <span style={{ display: 'inline-block', width: 2, height: 12, background: 'var(--muted)' }} />
+            Even pace today: {expectedKwh} kWh
+          </div>
         )}
-        <div className="progress-target-line" style={{ left: `${targetPct}%` }} title={`Target: ${targetKwh} kWh`} />
+        <div className="legend-dot">
+          <span style={{ display: 'inline-block', width: 9, height: 9, border: '1px solid var(--ink)' }} />
+          Target: {targetKwh} kWh
+        </div>
       </div>
-      <div className="progress-scale tabular-nums">
-        <span>0 kWh</span>
-        <span>{kwhSoFar} kWh used</span>
-        <span>{targetKwh} kWh target</span>
-      </div>
+
+      {overTarget && (
+        <div style={{ fontSize: 11, color: 'var(--data-2)', marginTop: 4 }}>
+          {(kwhSoFar - targetKwh).toFixed(1)} kWh over — bar shown capped at the target line.
+        </div>
+      )}
     </div>
   )
 }

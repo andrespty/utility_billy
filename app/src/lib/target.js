@@ -23,21 +23,23 @@ function todayIso() {
 
 // Cycle-to-date progress, independent of any dollar target: how far into
 // the cycle we are, total consumption so far, and the average daily pace
-// that implies. `daysElapsed`/`daysRemaining`/`avgDailyKwh` are only
-// meaningful for the cycle containing today, so they're null otherwise.
+// that implies. `daysElapsed`/`daysRemaining` are only meaningful for the
+// cycle containing today, so they're null otherwise. `avgDailyKwh` is
+// always computed — over the days elapsed so far for the current cycle,
+// or over the whole cycle length for a past (or not-yet-started) one.
 export function computeCycleProgress({ readings, startDate, endDate, isCurrentCycle }) {
   const totalDays = daysBetweenInclusive(startDate, endDate)
   const kwhSoFar = Number((readings || []).reduce((sum, r) => sum + Number(r.consumption), 0).toFixed(3))
 
   let daysElapsed = null
   let daysRemaining = null
-  let avgDailyKwh = null
 
   if (isCurrentCycle) {
     daysElapsed = Math.min(Math.max(daysBetweenInclusive(startDate, todayIso()), 1), totalDays)
     daysRemaining = Math.max(totalDays - daysElapsed, 0)
-    avgDailyKwh = Number((kwhSoFar / daysElapsed).toFixed(2))
   }
+
+  const avgDailyKwh = Number((kwhSoFar / (daysElapsed ?? totalDays)).toFixed(2))
 
   return { totalDays, daysElapsed, daysRemaining, kwhSoFar, avgDailyKwh }
 }
