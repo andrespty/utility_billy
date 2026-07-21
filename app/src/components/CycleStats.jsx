@@ -106,6 +106,11 @@ export default function CycleStats({
                 <div className="value tabular-nums">{estimate.totalKwh}</div>
               </div>
 
+              <div className="stat-box">
+                <div className="label">Avg kWh/day</div>
+                <div className="value tabular-nums">{cycleProgress?.avgDailyKwh}</div>
+              </div>
+
               {program.type === 'time_of_use' ? (
                 <>
                   <div className="stat-box">
