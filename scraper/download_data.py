@@ -1,10 +1,77 @@
 from datetime import datetime, date
 from pathlib import Path
+from typing import List
 
 from playwright.sync_api import sync_playwright
 
 import usage as usage_mod
 from auth import login, get_credentials, OUTPUT_DIR, BASE_URL
+
+
+def download_usage_days(dates: List[date], headless: bool, output_dir: Path) -> List[Path]:
+    """
+    Download hourly usage data for multiple days in a single browser/login
+    session (unlike calling download_usage_day() in a loop, which would log
+    in fresh for every day). Used by sync.py to pull a trailing window of
+    days that covers Talgov's ~2-day data-availability lag.
+
+    Args:
+        dates: the days to fetch, any order.
+        headless: whether to run the browser in headless mode.
+        output_dir: directory to save downloaded CSV files into.
+
+    Returns:
+        The list of CSV file paths that were actually exported — days with
+        no data on file yet (too recent, or a genuine gap) are skipped.
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    email, password, account_number = get_credentials()
+    usage_url = f"{BASE_URL}/usage/{account_number}"
+    exported: List[Path] = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=headless)
+        context = browser.new_context(accept_downloads=True)
+        page = context.new_page()
+
+        login(page, email, password)
+
+        print(f"Navigating to usage page: {usage_url}")
+        page.goto(usage_url, wait_until="domcontentloaded")
+        page.wait_for_selector("iti-usage-page", state="visible", timeout=30_000)
+        usage_mod.dismiss_alert_modal(page)
+        usage_mod.select_graph_type(page, "day")
+
+        today = date.today()
+        for target_date in dates:
+            if target_date > today:
+                print(f"\nSkipping {target_date.isoformat()} (future date, no data yet).")
+                continue
+
+            print(f"\nSwitching to Day view for {target_date.isoformat()}...")
+            usage_mod.open_date_picker(page)
+            usage_mod.set_date(page, target_date)
+
+            print("Refreshing data...")
+            usage_mod.click_refresh(page)
+
+            if usage_mod.has_no_data(page):
+                print(f"No data for {target_date.isoformat()} — skipping export.")
+                continue
+
+            daily_file = out_dir / f"usage_day_{target_date.isoformat()}.csv"
+            print(f"Exporting daily data to {daily_file}...")
+            usage_mod.export_excel(page, daily_file)
+            exported.append(daily_file)
+
+        context.close()
+        browser.close()
+
+    print(f"\nDownloaded {len(exported)} day(s) to {out_dir}.")
+    return exported
+
 
 def download_usage_day(target_date: date, headless: bool, output_dir: Path) -> None:
     """

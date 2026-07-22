@@ -1,0 +1,52 @@
+name: Sync Talgov usage data
+
+on:
+  schedule:
+    # ~5-6am US Eastern, daily. Talgov's data lags ~2 days, so sync.py
+    # always re-pulls a trailing window (see --days) rather than just
+    # "yesterday" to catch anything that only just became available.
+    - cron: '0 10 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Run sync
+        env:
+          TALGOV_EMAIL: ${{ secrets.TALGOV_EMAIL }}
+          TALGOV_PASSWORD: ${{ secrets.TALGOV_PASSWORD }}
+          ACCOUNT_NUMBER: ${{ secrets.TALGOV_ACCOUNT_NUMBER }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_EMAIL: ${{ secrets.SUPABASE_EMAIL }}
+          SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+        run: python sync.py --headless --days 5
+
+      # auth.py's login() saves a screenshot + HTML snapshot here if the
+      # post-login redirect times out (bad credentials, an MFA/risk
+      # challenge, a changed selector, etc.) — surface them as a downloadable
+      # artifact so a failed scheduled run is debuggable without re-running
+      # headed locally.
+      - name: Upload debug snapshot on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: login-debug-snapshot
+          path: scraper/output/login_error.*
+          if-no-files-found: ignore
+          retention-days: 14

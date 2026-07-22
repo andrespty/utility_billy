@@ -106,6 +106,61 @@ Once you have `.xlsx`/`.csv` exports in `output/`, upload them through the
 powers the Dashboard/Billing views. This scraper only gets the data out of
 Talgov; it doesn't feed the app directly.
 
+For a fully automatic path that skips the manual download/upload entirely,
+see `sync.py` below.
+
+## Automatic sync into Supabase (`sync.py`)
+
+`sync.py` logs into Talgov once, downloads a trailing window of days
+(default the last 5 — Talgov's data usually lags ~2 days, so re-pulling a
+few extra days each run catches anything that only just became available),
+and upserts the parsed rows straight into the app's `energy_readings` table.
+It's safe to re-run: everything upserts on
+`(user_id, service, reading_date, hour_start)`, the same conflict key the
+app's own Upload page uses, so re-syncing a day you already have just
+overwrites it.
+
+```bash
+cd scraper
+python sync.py                # last 5 days
+python sync.py --days 10      # wider backfill window
+python sync.py --headless
+```
+
+It signs in to Supabase as **your own app account** (email/password — the
+same one you log into the web app with), not a service-role key, so it goes
+through the exact same row-level-security path the browser does. Add these
+to your `.env` alongside the `TALGOV_*` values (see `.env.example`):
+
+```
+SUPABASE_URL=...            # same as the app's VITE_SUPABASE_URL
+SUPABASE_ANON_KEY=...       # same as the app's VITE_SUPABASE_ANON_KEY
+SUPABASE_EMAIL=...          # your app login email
+SUPABASE_PASSWORD=...       # your app login password
+```
+
+### Running it on a schedule (GitHub Actions)
+
+`.github/workflows/sync-talgov.yml` runs `sync.py --headless` once a day.
+To enable it, add these as **Actions secrets** on the repo (Settings >
+Secrets and variables > Actions):
+
+- `TALGOV_EMAIL`, `TALGOV_PASSWORD`, `TALGOV_ACCOUNT_NUMBER`
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_EMAIL`, `SUPABASE_PASSWORD`
+
+You can trigger a run manually from the Actions tab ("Run workflow") to
+test it before waiting for the schedule. Since the repo needs to be private
+anyway (per the main README), these secrets aren't any more exposed than
+the app's own env vars already are in your Supabase project.
+
+**Worth watching for:** GitHub-hosted runners log in from GitHub's IP
+ranges, not your home network. Even without MFA today, Talgov's login could
+still treat that as a "new device/location" and start challenging it later.
+If a scheduled run fails, check the workflow run's **Artifacts** — on a
+login timeout, `auth.py` saves a screenshot + HTML snapshot
+(`login_error.png`/`.html`), and the workflow uploads them as a
+`login-debug-snapshot` artifact — before assuming the scraper itself broke.
+
 ## Notes / limitations
 
 - If Talgov's login requires MFA (SMS/email code, authenticator app, etc.),
