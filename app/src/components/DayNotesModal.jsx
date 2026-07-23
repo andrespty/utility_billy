@@ -3,7 +3,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -37,7 +36,6 @@ export default function DayNotesModal({ date, onClose }) {
   const [hour, setHour] = useState(0)
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
-  const [selectedHour, setSelectedHour] = useState(null)
 
   async function load() {
     setLoading(true)
@@ -62,7 +60,6 @@ export default function DayNotesModal({ date, onClose }) {
   useEffect(() => {
     load()
     loadReadings()
-    setSelectedHour(null)
   }, [date])
 
   const hourlyChartData = useMemo(() => {
@@ -72,6 +69,11 @@ export default function DayNotesModal({ date, onClose }) {
       kwh: byHour.has(h) ? Number(byHour.get(h).toFixed(3)) : 0,
     }))
   }, [readings])
+
+  const totalKwh = useMemo(
+    () => Number(readings.reduce((sum, r) => sum + Number(r.consumption), 0).toFixed(2)),
+    [readings]
+  )
 
   const notedHours = useMemo(
     () => new Set(notes.filter((n) => n.hour !== null).map((n) => n.hour)),
@@ -97,10 +99,9 @@ export default function DayNotesModal({ date, onClose }) {
     setFormOpen(true)
   }
 
-  function openHourForm() {
-    if (selectedHour === null) return
+  function openHourForm(h) {
     setMode('hour')
-    setHour(selectedHour)
+    setHour(h)
     setFormOpen(true)
   }
 
@@ -128,7 +129,6 @@ export default function DayNotesModal({ date, onClose }) {
 
     setBody('')
     setFormOpen(false)
-    setSelectedHour(null)
     load()
   }
 
@@ -147,11 +147,14 @@ export default function DayNotesModal({ date, onClose }) {
           </button>
         </div>
 
+        <div className="tabular-nums" style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+          Total: {totalKwh} kWh
+        </div>
         <p className="note" style={{ marginTop: 0 }}>
-          Click an hour to see it below, or to attach a note to it.
+          Click an hour bar to add a note for that hour.
         </p>
         <ResponsiveContainer width="100%" height={110}>
-          <BarChart data={hourlyChartData} margin={{ top: 10, right: 4, left: -28, bottom: 0 }}>
+          <BarChart data={hourlyChartData} margin={{ top: 10, right: 8, left: 4, bottom: 0 }} barCategoryGap={2}>
             <XAxis
               dataKey="hour"
               tickFormatter={hourLabel}
@@ -174,30 +177,13 @@ export default function DayNotesModal({ date, onClose }) {
             />
             <Bar
               dataKey="kwh"
+              fill={BAR_COLOR}
               cursor="pointer"
-              onClick={(data) => setSelectedHour(data.payload.hour)}
+              onClick={(data) => openHourForm(data.payload.hour)}
               label={renderHourNoteMarker}
-            >
-              {hourlyChartData.map((entry) => (
-                <Cell
-                  key={entry.hour}
-                  fill={entry.hour === selectedHour ? 'var(--accent-gold)' : BAR_COLOR}
-                />
-              ))}
-            </Bar>
+            />
           </BarChart>
         </ResponsiveContainer>
-
-        {selectedHour !== null && !formOpen && (
-          <button
-            type="button"
-            className="secondary"
-            style={{ marginTop: 8 }}
-            onClick={openHourForm}
-          >
-            Add note for {hourLabel(selectedHour)}
-          </button>
-        )}
 
         <div style={{ marginTop: 16, borderTop: '1px solid var(--rule-faint)', paddingTop: 16 }}>
           {!loading && notes.length === 0 && <p className="note">No notes for this day yet.</p>}

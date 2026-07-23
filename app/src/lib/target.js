@@ -1,4 +1,4 @@
-// Target bill pacing helpers used by the Billing tab.
+// Target bill pacing helpers used by the Dashboard's Billing Cycle view.
 // Pure functions only — no Supabase calls.
 
 import { calculateEnergyCharge } from './billing'
@@ -19,6 +19,63 @@ function todayIso() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
     d.getDate()
   ).padStart(2, '0')}`
+}
+
+// Cycle-to-date progress, independent of any dollar target: how far into
+// the cycle we are, total consumption so far, and the average daily pace
+// that implies. `daysElapsed`/`daysRemaining` are only meaningful for the
+// cycle containing today, so they're null otherwise. `avgDailyKwh` is
+// always computed — over the days elapsed so far for the current cycle,
+// or over the whole cycle length for a past (or not-yet-started) one.
+export function computeCycleProgress({ readings, startDate, endDate, isCurrentCycle }) {
+  const totalDays = daysBetweenInclusive(startDate, endDate)
+  const kwhSoFar = Number((readings || []).reduce((sum, r) => sum + Number(r.consumption), 0).toFixed(3))
+
+  let daysElapsed = null
+  let daysRemaining = null
+
+  if (isCurrentCycle) {
+    daysElapsed = Math.min(Math.max(daysBetweenInclusive(startDate, todayIso()), 1), totalDays)
+    daysRemaining = Math.max(totalDays - daysElapsed, 0)
+  }
+
+  const avgDailyKwh = Number((kwhSoFar / (daysElapsed ?? totalDays)).toFixed(2))
+
+  return { totalDays, daysElapsed, daysRemaining, kwhSoFar, avgDailyKwh }
+}
+
+// Projects the cycle's final kWh and total bill by extrapolating the
+// average daily pace observed so far (kwhSoFar / daysElapsed) across the
+// whole cycle. For time-of-use programs this assumes the on/off-peak split
+// observed so far holds for the rest of the cycle too (approximate — same
+// assumption `targetKwhFromDollars` uses for its blended rate). Only
+// meaningful mid-cycle, so returns null once `daysElapsed` isn't available.
+export function projectCycleTotal(program, readings, cycleProgress, fixedCostsTotal) {
+  if (!program || !cycleProgress || !cycleProgress.daysElapsed) return null
+
+  const { daysElapsed, totalDays } = cycleProgress
+  const scale = totalDays / daysElapsed
+  const energy = calculateEnergyCharge(program, readings)
+  const projectedTotalKwh = Number((energy.totalKwh * scale).toFixed(2))
+
+  let projectedEnergyCharge
+  let approximate = false
+
+  if (program.type === 'fixed') {
+    projectedEnergyCharge = projectedTotalKwh * Number(program.fixed_rate)
+  } else {
+    const projectedOnPeakKwh = energy.onPeakKwh * scale
+    const projectedOffPeakKwh = energy.offPeakKwh * scale
+    projectedEnergyCharge =
+      projectedOnPeakKwh * Number(program.on_peak_rate) + projectedOffPeakKwh * Number(program.off_peak_rate)
+    approximate = true
+  }
+
+  const projectedTotal = Number((projectedEnergyCharge + Number(fixedCostsTotal)).toFixed(2))
+
+  if (!Number.isFinite(projectedTotal)) return null
+
+  return { projectedTotalKwh, projectedTotal, approximate }
 }
 
 // Converts a dollar target into a target kWh for a given program + fixed costs.
@@ -78,7 +135,12 @@ export function computeTargetPace({
   isCurrentCycle,
   completeness,
 }) {
-  const totalDays = completeness ? completeness.totalDays : daysBetweenInclusive(startDate, endDate)
+  const { totalDays, daysElapsed, daysRemaining, kwhSoFar } = computeCycleProgress({
+    readings,
+    startDate,
+    endDate,
+    isCurrentCycle,
+  })
 
   const empty = {
     totalDays,
@@ -106,19 +168,12 @@ export function computeTargetPace({
     return { ...empty, status: 'invalid_target' }
   }
 
-  const energy = calculateEnergyCharge(program, readings)
-  const kwhSoFar = energy.totalKwh
   const flatDailyKwh = totalDays > 0 ? Number((targetKwh / totalDays).toFixed(2)) : null
 
-  let daysElapsed = null
-  let daysRemaining = null
   let adaptiveDailyKwh = null
   let status = completeness && completeness.missingDays > 0 ? 'incomplete_data' : 'ok'
 
   if (isCurrentCycle) {
-    daysElapsed = Math.min(Math.max(daysBetweenInclusive(startDate, todayIso()), 1), totalDays)
-    daysRemaining = Math.max(totalDays - daysElapsed, 0)
-
     if (kwhSoFar > targetKwh) {
       status = 'over_target'
     } else if (daysRemaining <= 0) {

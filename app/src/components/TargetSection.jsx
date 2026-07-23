@@ -96,8 +96,8 @@ export default function TargetSection() {
     <div className="card">
       <h3>Target bill</h3>
       <p className="note">
-        Set a monthly dollar target and the Billing tab will show a daily kWh pace to help
-        you hit it.
+        Set a monthly dollar target and the Dashboard's Billing Cycle view will show a daily
+        kWh pace to help you hit it.
       </p>
 
       <form onSubmit={handleSave}>
@@ -120,7 +120,7 @@ export default function TargetSection() {
             onChange={(e) => setEnabled(e.target.checked)}
             disabled={loading}
           />
-          Show target tracking on the Billing page
+          Show target tracking on the Dashboard's Billing Cycle view
         </label>
 
         {error && <div className="error-text" style={{ marginTop: 8 }}>{error}</div>}

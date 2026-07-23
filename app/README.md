@@ -8,16 +8,22 @@ utility CSV exports. Free to host, single-user, backed by a free Supabase projec
 - You download the hourly usage CSV from your utility's website (no API available).
 - You log into this site and upload that CSV through the Upload tab.
 - The app parses it and stores each hourly reading in a Supabase (Postgres) table.
-- The Dashboard tab charts daily totals and your typical hour-by-hour usage pattern.
+- The Dashboard tab charts daily totals and your typical hour-by-hour usage pattern,
+  for the last 7/30/90 days, all time, or a specific billing cycle.
 - The Upload tab shows a calendar of which days you have data for (gray = none,
   yellow = partial, green = a full 24 hours), so gaps are easy to spot.
 - Re-uploading a day you've already uploaded overwrites that day's rows (safe to redo).
-- The Settings tab lets you define rate programs, fixed costs, and billing cycles.
-- The Billing tab estimates the cost of each cycle using whichever program is
-  marked default, plus your fixed costs, and lets you record the actual bill
-  amount to compare against the estimate.
+- The Settings tab lets you define rate programs, fixed costs, and billing cycles
+  (including each cycle's actual bill amount, once you have it).
+- Switching the Dashboard's range control to **Billing Cycle** estimates the cost of
+  the selected cycle using whichever program is marked default, plus your fixed
+  costs, and shows the variance against the actual bill amount if you've entered one.
 - You can optionally set a target bill amount in Settings; when turned on, the
-  Billing tab shows a daily kWh pace to help you hit it.
+  Dashboard's Billing Cycle view shows a daily kWh pace to help you hit it.
+- The Logs tab lets you jot down what you're doing in the moment ("doing laundry"),
+  since the utility's data usually shows up a day or two later. Logs are just notes
+  keyed by date (and optionally hour), so a log added today is already attached once
+  that day's readings arrive — nothing to reconnect.
 
 ## 1. Create a Supabase project (free)
 
@@ -106,21 +112,24 @@ project via `schema.sql` already includes these tables.
 
 - **Rate programs** (up to 3): a name, and either a flat `$/kWh` rate, or an
   on-peak/off-peak time-of-use rate with separate hour windows for weekdays vs
-  weekends. One program is marked **default** — that's the one the Billing tab
-  uses. The first program you create becomes the default automatically; use
-  "Set default" on any other program to switch.
+  weekends. One program is marked **default** — that's the one the Dashboard's
+  Billing Cycle view uses. The first program you create becomes the default
+  automatically; use "Set default" on any other program to switch.
 - **Fixed costs**: a flat list of name + amount charges (service fee, delivery,
   taxes) that apply to every bill regardless of consumption.
 - **Bill cycles**: a manually maintained list of start/end date pairs. The one
-  containing today's date is flagged "Current" in the list.
+  containing today's date is flagged "Current" in the list. Each row also has
+  an editable actual-bill-amount field (saved on blur) — enter it once your
+  real bill arrives to see the variance against the estimate.
 
 ## Adding the billing calculation fields
 
 `npx supabase db push` also applies `supabase/migrations/20260717140000_add_billing_fields.sql`,
 which adds `is_default` to `programs` and `actual_amount` to `bill_cycles`. Run
-it, then set a default program in Settings before checking the Billing tab.
+it, then set a default program in Settings before switching the Dashboard to
+Billing Cycle view.
 
-## How the Billing tab calculates an estimate
+## How the Dashboard's Billing Cycle view calculates an estimate
 
 For each cycle, it pulls every hourly reading between the cycle's start and end
 dates and prices it using the default program:
@@ -132,29 +141,29 @@ dates and prices it using the default program:
 
 Your fixed costs total is added on top for the estimated total. If any day in
 the cycle is missing data or has fewer than 24 hours recorded, a warning shows
-so you know the estimate may be low. You can optionally enter the actual dollar
-amount from your real bill for each cycle — the app shows the difference from
-the estimate once you save it.
+so you know the estimate may be low. Once you've entered the actual dollar
+amount for a cycle in Settings &gt; Bill cycles, the Dashboard shows the
+difference from the estimate.
 
 ## Adding the target bill table
 
 `npx supabase db push` also applies `supabase/migrations/20260718000000_add_target.sql`,
 which creates `target_settings` (one row per user, same ownership pattern as above).
-Run it, then set a target in Settings to see pacing on the Billing tab.
+Run it, then set a target in Settings to see pacing on the Dashboard.
 
 ### What the Target section stores
 
 - **Target settings**: a single global dollar target for your bill, plus a toggle
-  for whether to show target tracking on the Billing tab. There's at most one row
-  per user — saving always updates it in place. The target amount must be strictly
-  more than your current fixed costs total, since that's the floor a bill can't
-  go below.
+  for whether to show target tracking on the Dashboard's Billing Cycle view.
+  There's at most one row per user — saving always updates it in place. The
+  target amount must be strictly more than your current fixed costs total,
+  since that's the floor a bill can't go below.
 
-## How the Billing tab shows target pacing
+## How the Dashboard shows target pacing
 
-When target tracking is turned on and a valid target is set, the Billing tab
-converts your dollar target into a target kWh using the default rate program and
-your fixed costs, then shows:
+When target tracking is turned on and a valid target is set, switching the
+Dashboard to Billing Cycle view converts your dollar target into a target kWh
+using the default rate program and your fixed costs, then shows:
 
 - A **flat daily pace**: target kWh divided evenly across the whole cycle.
 - For the cycle containing today only, an **adaptive daily pace**: how many kWh/day
