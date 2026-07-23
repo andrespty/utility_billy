@@ -130,7 +130,7 @@ def sync_recent_days() -> None:
  
     #         all_rows.extend(rows)
     #         days_processed += 1
-    tmp_dir = Path("scraper/debug_output")
+    tmp_dir = Path(__file__).parent / "debug_output"
     tmp_dir.mkdir(parents=True, exist_ok=True)
     download_usage_days(headless=True, output_dir=tmp_dir)
 
