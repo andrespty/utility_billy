@@ -95,8 +95,8 @@ def set_date(page: Page, target_date: date) -> None:
         )
 
     date_input.click(click_count=3)  # triple-click to select all text
-    page.evaluate("(text) => navigator.clipboard.writeText(text)", date_str)
-    page.keyboard.press("Meta+V") 
+    date_input.fill(date_str)
+    date_input.press("Enter")
     print(date_str)
     # Close any lingering calendar popup so it doesn't intercept the next click.
     page.wait_for_timeout(300)
