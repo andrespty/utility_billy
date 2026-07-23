@@ -1,0 +1,41 @@
+name: Sync Talgov usage data
+
+on:
+  schedule:
+    # Runs daily at 11:00 UTC (~6-7am US Eastern, depending on DST) so the
+    # prior day's usage data has had time to post on Talgov's end.
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}  # allows manual "Run workflow" from the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scraper
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browser
+        run: playwright install chromium --with-deps
+
+      - name: Run sync
+        env:
+          TALGOV_EMAIL: ${{ secrets.TALGOV_EMAIL }}
+          TALGOV_PASSWORD: ${{ secrets.TALGOV_PASSWORD }}
+          ACCOUNT_NUMBER: ${{ secrets.ACCOUNT_NUMBER }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_USER_ID: ${{ secrets.SUPABASE_USER_ID }}
+        run: python auto_sync.py
