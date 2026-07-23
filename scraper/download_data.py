@@ -48,10 +48,16 @@ def download_usage_days(headless: bool, output_dir: Path) -> None:
             usage_mod.click_refresh(page)
 
             if usage_mod.has_no_data(page):
-                usage_mod.click_refresh(page)
-                if usage_mod.has_no_data(page):
-                    print(f"No data for {target_date.isoformat()} — skipping export.")
-                    continue
+                page.screenshot(path=str(output_dir / f"debug_{target_date.isoformat()}.png"))
+                (output_dir / f"debug_{target_date.isoformat()}.html").write_text(page.content())
+                print(f"No data for {target_date.isoformat()} — saved debug screenshot/HTML.")
+                continue
+
+            # if usage_mod.has_no_data(page):
+            #     usage_mod.click_refresh(page)
+            #     if usage_mod.has_no_data(page):
+            #         print(f"No data for {target_date.isoformat()} — skipping export.")
+            #         continue
 
             daily_file = output_dir / f"usage_day_{target_date.isoformat()}.csv"
             print(f"Exporting daily data to {daily_file}...")
