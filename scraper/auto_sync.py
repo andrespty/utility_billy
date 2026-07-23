@@ -110,7 +110,9 @@ def sync_recent_days() -> None:
     days_skipped: list[str] = []
  
     with tempfile.TemporaryDirectory() as tmp:
-        tmp_dir = Path(tmp)
+        # tmp_dir = Path(tmp)
+        tmp_dir = Path("scraper/debug_output")
+        tmp_dir.mkdir(parents=True, exist_ok=True)
         download_usage_days(headless=True, output_dir=tmp_dir)
  
         for target_date in target_dates:
