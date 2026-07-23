@@ -109,27 +109,46 @@ def sync_recent_days() -> None:
     days_processed = 0
     days_skipped: list[str] = []
  
-    with tempfile.TemporaryDirectory() as tmp:
-        # tmp_dir = Path(tmp)
-        tmp_dir = Path("scraper/debug_output")
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-        download_usage_days(headless=True, output_dir=tmp_dir)
+    # with tempfile.TemporaryDirectory() as tmp:
+    #     # tmp_dir = Path(tmp)
+    #     tmp_dir = Path("scraper/debug_output")
+    #     tmp_dir.mkdir(parents=True, exist_ok=True)
+    #     download_usage_days(headless=True, output_dir=tmp_dir)
  
-        for target_date in target_dates:
-            csv_path = tmp_dir / f"usage_day_{target_date.isoformat()}.csv"
-            if not csv_path.exists():
-                print(f"No export produced for {target_date.isoformat()} — skipping.")
-                days_skipped.append(target_date.isoformat())
-                continue
+    #     for target_date in target_dates:
+    #         csv_path = tmp_dir / f"usage_day_{target_date.isoformat()}.csv"
+    #         if not csv_path.exists():
+    #             print(f"No export produced for {target_date.isoformat()} — skipping.")
+    #             days_skipped.append(target_date.isoformat())
+    #             continue
  
-            rows = parse_day_csv(csv_path, target_date.isoformat(), user_id)
-            if not rows:
-                print(f"No usable rows parsed for {target_date.isoformat()} — skipping.")
-                days_skipped.append(target_date.isoformat())
-                continue
+    #         rows = parse_day_csv(csv_path, target_date.isoformat(), user_id)
+    #         if not rows:
+    #             print(f"No usable rows parsed for {target_date.isoformat()} — skipping.")
+    #             days_skipped.append(target_date.isoformat())
+    #             continue
  
-            all_rows.extend(rows)
-            days_processed += 1
+    #         all_rows.extend(rows)
+    #         days_processed += 1
+    tmp_dir = Path("scraper/debug_output")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    download_usage_days(headless=True, output_dir=tmp_dir)
+
+    for target_date in target_dates:
+        csv_path = tmp_dir / f"usage_day_{target_date.isoformat()}.csv"
+        if not csv_path.exists():
+            print(f"No export produced for {target_date.isoformat()} — skipping.")
+            days_skipped.append(target_date.isoformat())
+            continue
+
+        rows = parse_day_csv(csv_path, target_date.isoformat(), user_id)
+        if not rows:
+            print(f"No usable rows parsed for {target_date.isoformat()} — skipping.")
+            days_skipped.append(target_date.isoformat())
+            continue
+
+        all_rows.extend(rows)
+        days_processed += 1
  
     if all_rows:
         print(f"\nUpserting {len(all_rows)} rows into energy_readings...")
