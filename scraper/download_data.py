@@ -18,7 +18,8 @@ def download_usage_days(headless: bool, output_dir: Path) -> None:
     email, password, account_number = get_credentials()
     usage_url = f"{BASE_URL}/usage/{account_number}"
 
-    output_dir = Path(output_dir)
+    # output_dir = Path(output_dir)
+    output_dir = Path("scraper/debug_output")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     target_dates = [
