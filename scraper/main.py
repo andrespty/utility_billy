@@ -18,14 +18,14 @@ from download_data import download_usage_day, download_usage_week_days
 output_download_dir_daily = Path(__file__).parent / "data" /"daily"
 output_download_dir_weekly = Path(__file__).parent / "data" /"weekly"
 
-date_download = "2026-07-15"  # Specify the date for which you want to download usage data
-# download_usage_day(target_date=date_download, headless=False, output_dir=output_download_dir_daily)
+date_download = "2026-07-22"  # Specify the date for which you want to download usage data
+download_usage_day(target_date=date_download, headless=False, output_dir=output_download_dir_daily)
 # download_usage_week_days(target_date=date_download, headless=False, output_dir=output_download_dir_weekly)
 
 
 # ==========================
 # Merge all downloaded CSVs into a single Excel file
 # ==========================
-df = build_all_day_data(output_download_dir_daily)
-output_excel_path = Path(__file__).parent / "output" / "merged_usage_data.xlsx"
-export_excel(df, output_excel_path)
+# df = build_all_day_data(output_download_dir_daily)
+# output_excel_path = Path(__file__).parent / "output" / "merged_usage_data.xlsx"
+# export_excel(df, output_excel_path)

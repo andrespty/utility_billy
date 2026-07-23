@@ -1,10 +1,64 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 import usage as usage_mod
 from auth import login, get_credentials, OUTPUT_DIR, BASE_URL
+
+def download_usage_days(headless: bool, output_dir: Path) -> None:
+    """
+    Download usage data for yesterday and the day before, in a single
+    browser session (one login covers both days).
+
+    Args:
+        headless (bool): Whether to run the browser in headless mode.
+        output_dir (Path): The directory to save downloaded CSV files into.
+    """
+    email, password, account_number = get_credentials()
+    usage_url = f"{BASE_URL}/usage/{account_number}"
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    target_dates = [
+        date.today() - timedelta(days=1),  # yesterday
+        date.today() - timedelta(days=2),  # day before
+    ]
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=headless)
+        context = browser.new_context(accept_downloads=True)
+        page = context.new_page()
+
+        login(page, email, password)
+        print(f"Navigating to usage page: {usage_url}")
+        page.goto(usage_url, wait_until="domcontentloaded")
+        page.wait_for_selector("iti-usage-page", state="visible", timeout=30_000)
+        usage_mod.dismiss_alert_modal(page)
+        usage_mod.select_graph_type(page, "day")
+
+        for target_date in target_dates:
+            print(f"\nSwitching to Day view for {target_date.isoformat()}...")
+            usage_mod.open_date_picker(page)
+            usage_mod.set_date(page, target_date)
+
+            print("Refreshing data...")
+            usage_mod.click_refresh(page)
+
+            if usage_mod.has_no_data(page):
+                usage_mod.click_refresh(page)
+                if usage_mod.has_no_data(page):
+                    print(f"No data for {target_date.isoformat()} — skipping export.")
+                    continue
+
+            daily_file = output_dir / f"usage_day_{target_date.isoformat()}.csv"
+            print(f"Exporting daily data to {daily_file}...")
+            usage_mod.export_excel(page, daily_file)
+
+        context.close()
+        browser.close()
+    print(f"\nDone. Files saved in: {output_dir}")
 
 def download_usage_day(target_date: date, headless: bool, output_dir: Path) -> None:
     """
