@@ -29,6 +29,7 @@ def download_usage_days(headless: bool, output_dir: Path) -> None:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
         context = browser.new_context(accept_downloads=True)
+        context.grant_permissions(["clipboard-read", "clipboard-write"], origin=BASE_URL)
         page = context.new_page()
 
         login(page, email, password)
@@ -59,6 +60,7 @@ def download_usage_days(headless: bool, output_dir: Path) -> None:
         context.close()
         browser.close()
     print(f"\nDone. Files saved in: {output_dir}")
+
 
 def download_usage_day(target_date: date, headless: bool, output_dir: Path) -> None:
     """
