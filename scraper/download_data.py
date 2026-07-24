@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 import usage as usage_mod
 from auth import login, get_credentials, OUTPUT_DIR, BASE_URL
 
-def download_usage_days(headless: bool, output_dir: Path) -> None:
+def download_usage_days(headless: bool, output_dir: Path, debug=False) -> None:
     """
     Download usage data for yesterday and the day before, in a single
     browser session (one login covers both days).
@@ -53,9 +53,10 @@ def download_usage_days(headless: bool, output_dir: Path) -> None:
                 print("No data. Refreshing again...")
                 usage_mod.click_refresh(page)
                 if usage_mod.has_no_data(page):
-                    page.screenshot(path=str(output_dir / f"debug_{target_date.isoformat()}.png"))
-                    (output_dir / f"debug_{target_date.isoformat()}.html").write_text(page.content())
-                    print(f"No data for {target_date.isoformat()} — saved debug screenshot/HTML.")
+                    if debug:
+                        page.screenshot(path=str(output_dir / f"debug_{target_date.isoformat()}.png"))
+                        (output_dir / f"debug_{target_date.isoformat()}.html").write_text(page.content())
+                    print(f"No data for {target_date.isoformat()}. Skipping export.")
                     continue
 
             daily_file = output_dir / f"usage_day_{target_date.isoformat()}.csv"
