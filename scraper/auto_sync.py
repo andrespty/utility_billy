@@ -103,7 +103,9 @@ def sync_recent_days() -> None:
  
     supabase = get_supabase_client()
     today = date.today()
-    target_dates = [today - timedelta(days=1), today - timedelta(days=2)]
+    target_dates = [today - timedelta(days=1), 
+                    today - timedelta(days=2),
+                    today - timedelta(days=3)]
  
     all_rows: list[dict] = []
     days_processed = 0
