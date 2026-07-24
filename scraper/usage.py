@@ -11,6 +11,7 @@ import re
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Tuple
+import sys
 
 from playwright.sync_api import Page
 
@@ -95,8 +96,11 @@ def set_date(page: Page, target_date: date) -> None:
         )
 
     date_input.click(click_count=3)  # triple-click to select all text
-    date_input.fill(date_str)
-    date_input.press("Enter")
+    # date_input.fill(date_str)
+    # date_input.press("Enter")
+    page.evaluate("(text) => navigator.clipboard.writeText(text)", date_str)
+    modifier = "Meta" if sys.platform == "darwin" else "Control"
+    page.keyboard.press(f"{modifier}+V")
     print(date_str)
     # Close any lingering calendar popup so it doesn't intercept the next click.
     page.wait_for_timeout(300)
