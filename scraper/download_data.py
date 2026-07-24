@@ -24,8 +24,7 @@ def download_usage_days(headless: bool, output_dir: Path, debug=False) -> None:
 
     target_dates = [
         date.today() - timedelta(days=1),  # yesterday
-        date.today() - timedelta(days=2),  # day before
-        date.today() - timedelta(days=3),  # day before
+        date.today() - timedelta(days=2)   # day before
     ]
 
     with sync_playwright() as p:
